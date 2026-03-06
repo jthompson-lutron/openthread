@@ -112,6 +112,29 @@ void SettingsBase::BorderAgentId::Log(Action aAction, const MeshCoP::BorderAgent
 }
 #endif
 
+#if OPENTHREAD_FTD
+bool SettingsBase::RouterConfiguration::IsDefault(void)
+{
+    return (mRouterConfigurationBitmap == 0 && mRouterDowngradeThreshold < 0 && mRouterUpgradeThreshold < 0 &&
+            mRouterUpgradeTransitionTimingMaximum == 0 && mRouterDowngradeTransitionTimingMinimum == 0 &&
+            mRouterDowngradeTransitionTimingMaximum == 0);
+}
+bool SettingsBase::RouterConfiguration::operator!=(const RouterConfiguration &aOther) const
+{
+    return (mRouterConfigurationBitmap != aOther.GetRouterConfigurationBitmap() ||
+            mRouterDowngradeThreshold != aOther.GetRouterDowngradeThreshold() ||
+            mRouterUpgradeThreshold != aOther.GetRouterUpgradeThreshold() ||
+            mRouterUpgradeTransitionTimingMaximum != aOther.GetRouterUpgradeTransitionTimingMaximum() ||
+            mRouterDowngradeTransitionTimingMinimum != aOther.GetRouterDowngradeTransitionTimingMinimum() ||
+            mRouterDowngradeTransitionTimingMaximum != aOther.GetRouterDowngradeTransitionTimingMaximum());
+}
+void SettingsBase::RouterConfiguration::Log(Action aAction) const
+{
+    LogInfo("%s RouterConfiguration {configuration:0x%02x, ineligible:%d, down:%d, up:%d}", ActionToString(aAction),
+            GetRouterConfigurationBitmap(), GetRouterDowngradeThreshold(), GetRouterUpgradeThreshold());
+}
+#endif
+
 #endif // OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
 
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
@@ -161,11 +184,12 @@ const char *SettingsBase::KeyToString(Key aKey)
     _(kKeyBrUlaPrefix, "BrUlaPrefix")             \
     _(kKeyBrOnLinkPrefixes, "BrOnLinkPrefixes")   \
     _(kKeyBorderAgentId, "BorderAgentId")         \
-    _(kKeyTcatCommrCert, "TcatCommrCert")
+    _(kKeyTcatCommrCert, "TcatCommrCert")         \
+    _(kKeyRouterConfiguration, "RouterConfiguration")
 
     DefineEnumStringArray(KeyMapList);
 
-    static_assert(kLastKey == kKeyTcatCommrCert, "kLastKey is not valid");
+    static_assert(kLastKey == kKeyRouterConfiguration, "kLastKey is not valid");
 
     OT_ASSERT(aKey <= kLastKey);
 
@@ -514,6 +538,12 @@ void Settings::Log(Action aAction, Error aError, Key aKey, const void *aValue)
 #if OPENTHREAD_CONFIG_BORDER_AGENT_ENABLE && OPENTHREAD_CONFIG_BORDER_AGENT_ID_ENABLE
         case kKeyBorderAgentId:
             BorderAgentId::Log(aAction, *reinterpret_cast<const MeshCoP::BorderAgent::Id *>(aValue));
+            break;
+#endif
+
+#if OPENTHREAD_FTD
+        case kKeyRouterConfiguration:
+            reinterpret_cast<const RouterConfiguration *>(aValue)->Log(aAction);
             break;
 #endif
 

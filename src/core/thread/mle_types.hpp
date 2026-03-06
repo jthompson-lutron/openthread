@@ -180,11 +180,20 @@ enum Command : uint8_t
  */
 enum RouterUpgradeReason : uint8_t
 {
-    kReasonTooFewRouters         = 2, ///< Too few routers.
-    kReasonHaveChildIdRequest    = 3, ///< Have pending Child ID Request.
-    kReasonParentPartitionChange = 4, ///< Parent Partition change.
-    kReasonBorderRouterRequest   = 5, ///< Device is Border Router.
+    kReasonTooFewRouters                          = 2, ///< Too few routers.
+    kReasonHaveChildIdRequest                     = 3, ///< Have pending Child ID Request.
+    kReasonParentPartitionChangeOrPriorityUpgrade = 4, ///< Parent Partition change or priority upgrade reason.
+    kReasonBorderRouterRequest                    = 5, ///< Device is Border Router.
 };
+
+// (Router Upgrade Reason) Detail masks for Status Detail TLV corresponding with RouterUpgradeReason values
+typedef uint8_t                     RouterUpgradeReasonDetail;
+constexpr RouterUpgradeReasonDetail kUpgradeDetailNone                      = 0x00;
+constexpr RouterUpgradeReasonDetail kUpgradeDetailTooFewRoutersMask         = 0x01; ///< Too few routers.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailHaveChildIdRequestMask    = 0x02; ///< Have pending Child ID Request.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailParentPartitionChangeMask = 0x04; ///< Parent during Partition change.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailBorderRouterRequestMask   = 0x08; ///< Border Router.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailPriorityUpgradeMask       = 0x10; ///< Priority Upgrade.
 
 /**
  * Specifies the leader role start mode.

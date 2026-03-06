@@ -5988,6 +5988,86 @@ template <> otError Interpreter::Process<Cmd("router")>(Arg aArgs[])
 exit:
     return error;
 }
+
+template <> otError Interpreter::Process<Cmd("routerconfig")>(Arg aArgs[])
+{
+    otError error = OT_ERROR_NONE;
+
+    /**
+     * @cli routerconfig
+     * @code
+     * routerconfig
+     * upgrade priority: 0
+     * parent priority: 0
+     * upgrade threshold: 16
+     * downgrade threshold: 23
+     * upgrade transition time max: 120
+     * downgrade transition time min: 0
+     * downgrade transition time max: 120
+     * Done
+     * @endcode
+     * @code
+     * routerconfig 1
+     * Done
+     * @endcode
+     * @code
+     * routerconfig 1 1 16 23 120 0 120
+     * Done
+     * @endcode
+     * @cparam routerconfig [@ca{0}|@ca{1}] [@ca{0}|@ca{1}] [@ca{0-32}] [@ca{0-32}] [@ca{0-65535}] [@ca{0-65535}]
+     * [@ca{0-65535}]
+     * @par
+     * The router priority, threshold, and transition time parameters.
+     */
+    if (aArgs[0].IsEmpty())
+    {
+        OutputLine("upgrade priority: %d", otThreadIsPriorityRouterUpgradeReasonEnabled(GetInstancePtr()));
+        OutputLine("parent priority: %d", otThreadIsPriorityParentEnabled(GetInstancePtr()));
+        OutputLine("upgrade threshold: %d", otThreadGetRouterUpgradeThreshold(GetInstancePtr()));
+        OutputLine("downgrade threshold: %d", otThreadGetRouterDowngradeThreshold(GetInstancePtr()));
+        OutputLine("upgrade transition time max: %d", otThreadGetRouterSelectionJitter(GetInstancePtr()));
+        OutputLine("downgrade transition time min: %d",
+                   otThreadGetRouterDowngradeTransitionTimingMinimum(GetInstancePtr()));
+        OutputLine("downgrade transition time max: %d",
+                   otThreadGetRouterDowngradeTransitionTimingMaximum(GetInstancePtr()));
+    }
+    else
+    {
+        bool     priorityRouterUpgradeReason;
+        bool     priorityParent;
+        int8_t   upgradeThreshold;
+        int8_t   downgradeThreshold;
+        uint16_t upgradeTimingMax;
+        uint16_t downgradeTimingMin;
+        uint16_t downgradeTimingMax;
+        SuccessOrExit(error = aArgs[0].ParseAsBool(priorityRouterUpgradeReason));
+        otThreadSetPriorityRouterUpgradeReasonEnabledStatus(GetInstancePtr(), priorityRouterUpgradeReason);
+        SuccessOrExit(!aArgs[1].IsEmpty());
+        SuccessOrExit(error = aArgs[1].ParseAsBool(priorityParent));
+        otThreadSetPriorityParentEnabledStatus(GetInstancePtr(), priorityParent);
+        SuccessOrExit(!aArgs[2].IsEmpty());
+        SuccessOrExit(error = aArgs[2].ParseAsInt8(upgradeThreshold));
+        otThreadSetRouterUpgradeThreshold(GetInstancePtr(), upgradeThreshold);
+        SuccessOrExit(!aArgs[3].IsEmpty());
+        SuccessOrExit(error = aArgs[3].ParseAsInt8(downgradeThreshold));
+        otThreadSetRouterDowngradeThreshold(GetInstancePtr(), downgradeThreshold);
+        SuccessOrExit(!aArgs[4].IsEmpty());
+        SuccessOrExit(error = aArgs[4].ParseAsUint16(upgradeTimingMax));
+        otThreadSetRouterSelectionJitter(GetInstancePtr(), upgradeTimingMax);
+        SuccessOrExit(!aArgs[5].IsEmpty());
+        SuccessOrExit(error = aArgs[5].ParseAsUint16(downgradeTimingMin));
+        otThreadSetRouterDowngradeTransitionTimingMinimum(GetInstancePtr(), downgradeTimingMin);
+        SuccessOrExit(!aArgs[6].IsEmpty());
+        SuccessOrExit(error = aArgs[6].ParseAsUint16(downgradeTimingMax));
+        otThreadSetRouterDowngradeTransitionTimingMaximum(GetInstancePtr(), downgradeTimingMax);
+
+        VerifyOrExit(!aArgs[7].IsEmpty(), error = OT_ERROR_INVALID_ARGS);
+    }
+
+exit:
+    return error;
+}
+
 /**
  * @cli routerdowngradethreshold (get,set)
  * @code routerdowngradethreshold
@@ -8611,6 +8691,7 @@ otError Interpreter::ProcessCommand(Arg aArgs[])
 #endif
 #if OPENTHREAD_FTD
         CmdEntry("router"),
+        CmdEntry("routerconfig"),
         CmdEntry("routerdowngradethreshold"),
         CmdEntry("routereligible"),
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE

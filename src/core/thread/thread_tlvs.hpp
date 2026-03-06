@@ -71,6 +71,7 @@ public:
         kNetworkName           = 12, ///< Network Name TLV
         kIp6Addresses          = 14, ///< IPv6 Addresses TLV
         kCommissionerSessionId = 15, ///< Commissioner Session ID TLV
+        kStatusDetail          = 16, ///< Status Detail TLV
     };
 
     /**
@@ -135,6 +136,13 @@ typedef UintTlvInfo<ThreadTlv::kCommissionerSessionId, uint16_t> ThreadCommissio
  * The definition of Status values in this TLV depends on the TMF message in which it is used.
  */
 typedef UintTlvInfo<ThreadTlv::kStatus, uint8_t> ThreadStatusTlv;
+
+/**
+ * Defines Status Detail TLV bitmap.
+ *
+ * Additional Status detail bitmap for use with Address Solicit requests.
+ */
+typedef UintTlvInfo<ThreadTlv::kStatusDetail, uint8_t> ThreadStatusDetailTlv;
 
 /**
  * Implements Router Mask TLV generation and parsing.

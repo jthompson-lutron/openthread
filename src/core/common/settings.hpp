@@ -106,23 +106,24 @@ public:
      */
     enum Key : uint16_t
     {
-        kKeyActiveDataset     = OT_SETTINGS_KEY_ACTIVE_DATASET,
-        kKeyPendingDataset    = OT_SETTINGS_KEY_PENDING_DATASET,
-        kKeyNetworkInfo       = OT_SETTINGS_KEY_NETWORK_INFO,
-        kKeyParentInfo        = OT_SETTINGS_KEY_PARENT_INFO,
-        kKeyChildInfo         = OT_SETTINGS_KEY_CHILD_INFO,
-        kKeySlaacIidSecretKey = OT_SETTINGS_KEY_SLAAC_IID_SECRET_KEY,
-        kKeyDadInfo           = OT_SETTINGS_KEY_DAD_INFO,
-        kKeySrpEcdsaKey       = OT_SETTINGS_KEY_SRP_ECDSA_KEY,
-        kKeySrpClientInfo     = OT_SETTINGS_KEY_SRP_CLIENT_INFO,
-        kKeySrpServerInfo     = OT_SETTINGS_KEY_SRP_SERVER_INFO,
-        kKeyBrUlaPrefix       = OT_SETTINGS_KEY_BR_ULA_PREFIX,
-        kKeyBrOnLinkPrefixes  = OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES,
-        kKeyBorderAgentId     = OT_SETTINGS_KEY_BORDER_AGENT_ID,
-        kKeyTcatCommrCert     = OT_SETTINGS_KEY_TCAT_COMMR_CERT,
+        kKeyActiveDataset       = OT_SETTINGS_KEY_ACTIVE_DATASET,
+        kKeyPendingDataset      = OT_SETTINGS_KEY_PENDING_DATASET,
+        kKeyNetworkInfo         = OT_SETTINGS_KEY_NETWORK_INFO,
+        kKeyParentInfo          = OT_SETTINGS_KEY_PARENT_INFO,
+        kKeyChildInfo           = OT_SETTINGS_KEY_CHILD_INFO,
+        kKeySlaacIidSecretKey   = OT_SETTINGS_KEY_SLAAC_IID_SECRET_KEY,
+        kKeyDadInfo             = OT_SETTINGS_KEY_DAD_INFO,
+        kKeySrpEcdsaKey         = OT_SETTINGS_KEY_SRP_ECDSA_KEY,
+        kKeySrpClientInfo       = OT_SETTINGS_KEY_SRP_CLIENT_INFO,
+        kKeySrpServerInfo       = OT_SETTINGS_KEY_SRP_SERVER_INFO,
+        kKeyBrUlaPrefix         = OT_SETTINGS_KEY_BR_ULA_PREFIX,
+        kKeyBrOnLinkPrefixes    = OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES,
+        kKeyBorderAgentId       = OT_SETTINGS_KEY_BORDER_AGENT_ID,
+        kKeyTcatCommrCert       = OT_SETTINGS_KEY_TCAT_COMMR_CERT,
+        kKeyRouterConfiguration = OT_SETTINGS_ROUTER_CONFIGURATION,
     };
 
-    static constexpr Key kLastKey = kKeyTcatCommrCert; ///< The last (numerically) enumerator value in `Key`.
+    static constexpr Key kLastKey = kKeyRouterConfiguration; ///< The last (numerically) enumerator value in `Key`.
 
     static_assert(static_cast<uint16_t>(kLastKey) < static_cast<uint16_t>(OT_SETTINGS_KEY_VENDOR_RESERVED_MIN),
                   "Core settings keys overlap with vendor reserved keys");
@@ -720,6 +721,167 @@ public:
 
         BorderAgentId(void) = delete;
     };
+#endif
+
+#if OPENTHREAD_FTD
+    /**
+     * Represents the router configuration.
+     */
+    OT_TOOL_PACKED_BEGIN
+    class RouterConfiguration : private Clearable<RouterConfiguration>
+    {
+        friend class Settings;
+        friend class Clearable<RouterConfiguration>;
+
+    public:
+        static constexpr Key kKey = kKeyRouterConfiguration; ///< The associated key.
+
+        static constexpr uint8_t kRouterIneligibleStatusMask       = 0x01; ///< Ineligible Status bitmask
+        static constexpr uint8_t kPriorityUpgradeReasonEnabledMask = 0x02; ///< Priority Upgrade Reason bitmask
+        static constexpr uint8_t kPriorityParentEnabledMask        = 0x04; ///< Priority Parent bitmask
+
+        /**
+         * Initializes the `RouterConfiguration` object.
+         */
+        void Init(void)
+        {
+            Clear();
+            mRouterDowngradeThreshold = -1;
+            mRouterUpgradeThreshold   = -1;
+        }
+
+        /**
+         * Check if the configuration is in its default status.
+         *
+         * @retval TRUE if the configuration is as initialized.
+         * @retval FALSE if a setting is non-default.
+         */
+        bool IsDefault(void);
+
+        /**
+         * Returns the stored Router Downgrade Threshold.
+         *
+         * @returns The stored Router Downgrade Threshold.
+         */
+        int8_t GetRouterDowngradeThreshold(void) const { return mRouterDowngradeThreshold; }
+
+        /**
+         * Sets the stored Router Downgrade Threshold.
+         *
+         * @param[in] aRouterDowngradeThreshold The Router Downgrade Threshold to store.
+         */
+        void SetRouterDowngradeThreshold(int8_t aRouterDowngradeThreshold)
+        {
+            mRouterDowngradeThreshold = aRouterDowngradeThreshold;
+        }
+
+        /**
+         * Returns the Router Upgrade Threshold.
+         *
+         * @returns The stored Router Upgrade Threshold.
+         */
+        int8_t GetRouterUpgradeThreshold(void) const { return mRouterUpgradeThreshold; }
+
+        /**
+         * Sets the stored Router Upgrade Threshold.
+         *
+         * @param[in] aRouterUpgradeThreshold The Router Upgrade Threshold to store.
+         */
+        void SetRouterUpgradeThreshold(int8_t aRouterUpgradeThreshold)
+        {
+            mRouterUpgradeThreshold = aRouterUpgradeThreshold;
+        }
+
+        /**
+         * Returns the Router Upgrade Transition Timing Maximum (Router Selection Jitter).
+         *
+         * @returns The stored Router Upgrade Transition Timing Maximum.
+         */
+        uint16_t GetRouterUpgradeTransitionTimingMaximum(void) const { return mRouterUpgradeTransitionTimingMaximum; }
+
+        /**
+         * Sets the Router Upgrade Transition Timing Maximum (Router Selection Jitter).
+         *
+         * @param[in] aTiming The Router Upgrade Transition Timing Maximum to store.
+         */
+        void SetRouterUpgradeTransitionTimingMaximum(uint16_t aTiming)
+        {
+            mRouterUpgradeTransitionTimingMaximum = aTiming;
+        }
+
+        /**
+         * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+         *
+         * @returns The stored Router Downgrade Transition Timing Minimum.
+         */
+        uint16_t GetRouterDowngradeTransitionTimingMinimum(void) const
+        {
+            return mRouterDowngradeTransitionTimingMinimum;
+        }
+
+        /**
+         * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+         *
+         * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
+         */
+        void SetRouterDowngradeTransitionTimingMinimum(uint16_t aTiming)
+        {
+            mRouterDowngradeTransitionTimingMinimum = aTiming;
+        }
+
+        /**
+         * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+         *
+         * @returns The stored Router Downgrade Transition Timing Maximum.
+         */
+        uint16_t GetRouterDowngradeTransitionTimingMaximum(void) const
+        {
+            return mRouterDowngradeTransitionTimingMaximum;
+        }
+
+        /**
+         * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+         *
+         * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
+         */
+        void SetRouterDowngradeTransitionTimingMaximum(uint16_t aTiming)
+        {
+            mRouterDowngradeTransitionTimingMaximum = aTiming;
+        }
+
+        /**
+         * Returns the bitmap representing the router configuration.
+         *
+         * @returns The Router Configuration Bitmap.
+         */
+        bool GetRouterConfigurationBitmap(void) const { return mRouterConfigurationBitmap; }
+
+        /**
+         * Sets the bitmap representing the router configuration.
+         *
+         * @param[in] aRouterConfigurationBitmap  The Router Configuration Bitmap.
+         */
+        void SetRouterConfigurationBitmap(bool aRouterConfigurationBitmap)
+        {
+            mRouterConfigurationBitmap = aRouterConfigurationBitmap;
+        }
+
+        bool operator!=(const RouterConfiguration &aOther) const;
+
+    private:
+        void Log(Action aAction) const;
+
+        uint8_t mRouterConfigurationBitmap; ///< Bitmap of router configuration statuses, default if 0
+
+        // Up/Downgrade Thresholds indicate defaults when negative
+        int8_t mRouterDowngradeThreshold; ///< Downgrade threshold configured, default if negative
+        int8_t mRouterUpgradeThreshold;   ///< Upgrade threshold configured, default if negative
+
+        // Transition timing indicates the default value when zero
+        uint16_t mRouterUpgradeTransitionTimingMaximum;   ///< Jitter max for upgrade transitions, default if 0
+        uint16_t mRouterDowngradeTransitionTimingMinimum; ///< Jitter min for downgrade transitions, default if 0
+        uint16_t mRouterDowngradeTransitionTimingMaximum; ///< Jitter max for downgrade transitions, default if 0
+    } OT_TOOL_PACKED_END;
 #endif
 
 protected:

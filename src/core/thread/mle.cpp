@@ -90,6 +90,9 @@ Mle::Mle(Instance &aInstance)
     , mNetworkIdTimeout(kNetworkIdTimeout)
     , mRouterUpgradeThreshold(kRouterUpgradeThreshold)
     , mRouterDowngradeThreshold(kRouterDowngradeThreshold)
+    , mRouterUpgradeTransitionTimingMaximum(kRouterSelectionJitter)
+    , mRouterDowngradeTransitionDelayMinimum(0)
+    , mRouterDowngradeTransitionDelayMaximum(kRouterSelectionJitter)
     , mPreviousPartitionRouterIdSequence(0)
     , mPreviousPartitionIdTimeout(0)
     , mChildRouterLinks(kChildRouterLinks)
@@ -361,6 +364,9 @@ void Mle::Restore(void)
 {
     Settings::NetworkInfo networkInfo;
     Settings::ParentInfo  parentInfo;
+#if OPENTHREAD_FTD
+    Settings::RouterConfiguration routerConfiguration;
+#endif
 
     IgnoreError(Get<MeshCoP::ActiveDatasetManager>().Restore());
     IgnoreError(Get<MeshCoP::PendingDatasetManager>().Restore());
@@ -386,6 +392,41 @@ void Mle::Restore(void)
     VerifyOrExit(networkInfo.GetVersion() == kThreadVersion);
 
     mLastSavedRole = static_cast<DeviceRole>(networkInfo.GetRole());
+
+#if OPENTHREAD_FTD
+    if (Get<Settings>().Read(routerConfiguration) == kErrorNone)
+    {
+        uint8_t  routerConfigurationBitmap = routerConfiguration.GetRouterConfigurationBitmap();
+        int8_t   routerDowngradeThreshold  = routerConfiguration.GetRouterDowngradeThreshold();
+        int8_t   routerUpgradeThreshold    = routerConfiguration.GetRouterUpgradeThreshold();
+        uint16_t upgradeTimingMax          = routerConfiguration.GetRouterUpgradeTransitionTimingMaximum();
+        uint16_t downgradeTimingMin        = routerConfiguration.GetRouterDowngradeTransitionTimingMinimum();
+        uint16_t downgradeTimingMax        = routerConfiguration.GetRouterDowngradeTransitionTimingMaximum();
+
+        SetRouterEligible(routerConfigurationBitmap & routerConfiguration.kRouterIneligibleStatusMask == 0);
+        SetPriorityRouterUpgradeReasonEnabledStatus(routerConfigurationBitmap &
+                                                    routerConfiguration.kPriorityUpgradeReasonEnabledMask != 0);
+        SetPriorityParentEnabledStatus(routerConfigurationBitmap & routerConfiguration.kPriorityParentEnabledMask != 0);
+
+        // Use the existing value initialized from a default, if negative
+        SetRouterThresholds((routerUpgradeThreshold >= 0) ? routerUpgradeThreshold : mRouterUpgradeThreshold,
+                            (routerDowngradeThreshold >= 0) ? routerDowngradeThreshold : mRouterDowngradeThreshold);
+
+        if (upgradeTimingMax > 0)
+        {
+            mRouterUpgradeTransitionTimingMaximum = upgradeTimingMax;
+        }
+        if (downgradeTimingMin > 0)
+        {
+            mRouterDowngradeTransitionDelayMinimum = downgradeTimingMin;
+        }
+        if (downgradeTimingMax > 0)
+        {
+            mRouterDowngradeTransitionDelayMaximum = downgradeTimingMax;
+        }
+    }
+    // Else, FTDs initialize with non-preferred and router-eligible defaults
+#endif
 
     switch (mLastSavedRole)
     {
@@ -459,6 +500,10 @@ exit:
 void Mle::Store(void)
 {
     Settings::NetworkInfo networkInfo;
+#if OPENTHREAD_FTD
+    Settings::RouterConfiguration existingRouterConfiguration;
+    Settings::RouterConfiguration newRouterConfiguration;
+#endif
 
     networkInfo.Init();
 
@@ -509,6 +554,58 @@ void Mle::Store(void)
 
     Get<KeyManager>().SetStoredMleFrameCounter(networkInfo.GetMleFrameCounter());
     Get<KeyManager>().SetStoredMacFrameCounter(networkInfo.GetMacFrameCounter());
+
+#if OPENTHREAD_FTD
+    newRouterConfiguration.Init();
+    newRouterConfiguration.SetRouterConfigurationBitmap(
+        (IsPriorityRouterUpgradeReasonEnabled() ? newRouterConfiguration.kPriorityUpgradeReasonEnabledMask : 0) |
+        (IsRouterEligible() ? 0 : newRouterConfiguration.kRouterIneligibleStatusMask) |
+        (IsPriorityParentEnabled() ? newRouterConfiguration.kPriorityParentEnabledMask : 0));
+
+    // Values will use placeholders if matching initialized defaults
+    if (mRouterUpgradeThreshold != kRouterUpgradeThreshold)
+    {
+        newRouterConfiguration.SetRouterUpgradeThreshold(mRouterUpgradeThreshold);
+    }
+    if (mRouterDowngradeThreshold != kRouterDowngradeThreshold)
+    {
+        newRouterConfiguration.SetRouterDowngradeThreshold(mRouterDowngradeThreshold);
+    }
+    if (mRouterUpgradeTransitionTimingMaximum != kRouterSelectionJitter)
+    {
+        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterUpgradeTransitionTimingMaximum);
+    }
+    if (mRouterDowngradeTransitionDelayMinimum != 0)
+    {
+        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterDowngradeTransitionDelayMinimum);
+    }
+    if (mRouterDowngradeTransitionDelayMaximum != kRouterSelectionJitter)
+    {
+        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterDowngradeTransitionDelayMaximum);
+    }
+
+    if (Get<Settings>().Read(existingRouterConfiguration) == kErrorNone)
+    {
+        // Router Configuration settings already exist.  Save new settings only if they have changed.
+        if (existingRouterConfiguration != newRouterConfiguration)
+        {
+            // Delete the new configuration if it matches defaults
+            if (newRouterConfiguration.IsDefault())
+            {
+                Get<Settings>().Delete<SettingsBase::RouterConfiguration>();
+            }
+            else
+            {
+                Get<Settings>().Save(newRouterConfiguration);
+            }
+        }
+    }
+    else if (!newRouterConfiguration.IsDefault())
+    {
+        // Router Configurations settings do not yet exist.  Save only if they are non-default.
+        Get<Settings>().Save(newRouterConfiguration);
+    }
+#endif
 
     LogDebg("Store Network Information");
 
@@ -5948,7 +6045,7 @@ void Mle::AnnounceHandler::HandleAnnounceAttachSuccess(void)
     mState = kStateToInformPreviousChannel;
 
 #if OPENTHREAD_FTD
-    if (Get<Mle>().IsFullThreadDevice() && !Get<Mle>().IsRouter() && Get<Mle>().IsRouterRoleTransitionPending())
+    if (Get<Mle>().IsFullThreadDevice() && !Get<Mle>().IsRouter() && Get<Mle>().IsRouterRoleTransitioning())
     {
         ExitNow();
     }

@@ -781,6 +781,87 @@ public:
     Error SetRouterEligible(bool aEligible);
 
     /**
+     * Indicates whether or not the router upgrades have priority.
+     *
+     * @retval TRUE   If priority upgrade reason is Enabled
+     * @retval FALSE  If priority upgrade reason is Disabled.
+     */
+    bool IsPriorityRouterUpgradeReasonEnabled(void) const { return mPriorizedRouterUpgradeReason; }
+
+    /**
+     * Sets whether or not the router upgrades have priority.
+     *
+     * @param[in]  aEnable  TRUE to enable the status, FALSE to disable it.
+     */
+    void SetPriorityRouterUpgradeReasonEnabledStatus(bool aEnable) { mPriorizedRouterUpgradeReason = aEnable; }
+
+    /**
+     * Indicates whether or not the device has parent priority.
+     *
+     * @retval TRUE   If priority parent status is Enabled
+     * @retval FALSE  If priority parent status is Disabled.
+     */
+    bool IsPriorityParentEnabled(void) const { return mPriorizedParent; }
+
+    /**
+     * Sets whether or not the device has parent priority.
+     *
+     * @param[in]  aEnable  TRUE to enable the status, FALSE to disable it.
+     */
+    void SetPriorityParentEnabledStatus(bool aEnable) { mPriorizedParent = aEnable; }
+
+    /**
+     * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+     *
+     * @returns The stored Router Downgrade Transition Timing Minimum.
+     */
+    uint16_t GetRouterDowngradeTransitionTimingMinimum(void) const { return mRouterDowngradeTransitionDelayMinimum; }
+
+    /**
+     * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+     *
+     * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
+     */
+    void SetRouterDowngradeTransitionTimingMinimum(uint16_t aTiming)
+    {
+        mRouterDowngradeTransitionDelayMinimum = aTiming;
+    }
+
+    /**
+     * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+     *
+     * @returns The stored Router Downgrade Transition Timing Maximum.
+     */
+    uint16_t GetRouterDowngradeTransitionTimingMaximum(void) const { return mRouterDowngradeTransitionDelayMaximum; }
+
+    /**
+     * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+     *
+     * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
+     */
+    void SetRouterDowngradeTransitionTimingMaximum(uint16_t aTiming)
+    {
+        mRouterDowngradeTransitionDelayMaximum = aTiming;
+    }
+
+    /**
+     * Start a router downgrade role transition at a time selected from the current preferred status.
+     */
+    void StartRouterRoleDowngradeTransition(void)
+    {
+        mRouterRoleTransition.StartDowngradeTransition(mRouterDowngradeTransitionDelayMinimum,
+                                                       mRouterDowngradeTransitionDelayMaximum);
+    }
+
+    /**
+     * Start a router upgrade role transition at a time selected from the current preferred status.
+     */
+    void StartUpgradeTransition(void)
+    {
+        mRouterRoleTransition.StartUpgradeTransition(mRouterUpgradeTransitionTimingMaximum);
+    }
+
+    /**
      * Indicates whether a node is the only router on the network.
      *
      * @retval TRUE   It is the only router in the network.
@@ -791,13 +872,14 @@ public:
     /**
      * Generates an Address Solicit request for a Router ID.
      *
-     * @param[in]  aReason  The reason for requesting a Router ID.
+     * @param[in]  aReasonDetail    Bitmap of reasons for additional detail on the upgrade reason.
      *
      * @retval kErrorNone           Successfully generated an Address Solicit message.
      * @retval kErrorNotCapable     Device is not capable of becoming a router
      * @retval kErrorInvalidState   Thread is not enabled
+     * @retval kErrorInvalidArgs    An invalid Reason Detail was provided.
      */
-    Error BecomeRouter(RouterUpgradeReason aReason);
+    Error BecomeRouter(uint8_t aReasonDetail);
 
     /**
      * Specifies the leader weight check behavior used in `BecomeLeader()`.
@@ -923,14 +1005,14 @@ public:
      *
      * @returns The ROUTER_SELECTION_JITTER value in seconds.
      */
-    uint8_t GetRouterSelectionJitter(void) const { return mRouterRoleTransition.GetJitter(); }
+    uint16_t GetRouterSelectionJitter(void) const { return mRouterUpgradeTransitionTimingMaximum; }
 
     /**
      * Sets the ROUTER_SELECTION_JITTER value.
      *
      * @param[in] aRouterJitter  The router selection jitter value (in seconds).
      */
-    void SetRouterSelectionJitter(uint8_t aRouterJitter) { mRouterRoleTransition.SetJitter(aRouterJitter); }
+    void SetRouterSelectionJitter(uint16_t aRouterJitter) { mRouterUpgradeTransitionTimingMaximum = aRouterJitter; }
 
     /**
      * Indicates whether or not router role transition (upgrade from REED or downgrade to REED) is pending.
@@ -938,7 +1020,10 @@ public:
      * @retval TRUE    Router role transition is pending.
      * @retval FALSE   Router role transition is not pending
      */
-    bool IsRouterRoleTransitionPending(void) const { return mRouterRoleTransition.IsPending(); }
+    bool IsRouterRoleTransitioning(void) const
+    {
+        return mRouterRoleTransition.GetTransition() != RouterRoleTransition::kNotTransitioning;
+    }
 
     /**
      * Returns the current timeout delay in seconds till router role transition (upgrade from REED or downgrade to
@@ -975,6 +1060,23 @@ public:
      * @param[in]  aThreshold  The ROUTER_DOWNGRADE_THRESHOLD value.
      */
     void SetRouterDowngradeThreshold(uint8_t aThreshold) { mRouterDowngradeThreshold = aThreshold; }
+
+    /**
+     * Sets the current router thresholds, if valid.
+     *
+     * Thresholds are valid when aUpgradeThreshold <= aDowngradeThreshold.
+     *
+     * @param[in]  aDowngradeThreshold  The router downgrade threshold value.
+     * @param[in]  aUpgradeThreshold  The router downgrade threshold value.
+     */
+    void SetRouterThresholds(uint8_t aUpgradeThreshold, uint8_t aDowngradeThreshold)
+    {
+        if (aUpgradeThreshold <= aDowngradeThreshold)
+        {
+            mRouterUpgradeThreshold   = aUpgradeThreshold;
+            mRouterDowngradeThreshold = aDowngradeThreshold;
+        }
+    }
 
     /**
      * Returns the MLE_CHILD_ROUTER_LINKS value.
@@ -1327,9 +1429,9 @@ private:
     static constexpr uint32_t kMaxLeaderToRouterTimeout      = 90000;  // (in msec)
     static constexpr uint8_t  kMinDowngradeNeighbors         = 7;
     static constexpr uint8_t  kNetworkIdTimeout              = 120; // (in sec)
-    static constexpr uint8_t  kRouterSelectionJitter         = 120; // (in sec)
-    static constexpr uint8_t  kRouterDowngradeThreshold      = 23;
-    static constexpr uint8_t  kRouterUpgradeThreshold        = 16;
+    static constexpr uint8_t  kRouterSelectionJitter         = 120; // (in sec) Default transition timing maximum
+    static constexpr uint8_t  kRouterDowngradeThreshold      = 23;  // Default downgrade threshold
+    static constexpr uint8_t  kRouterUpgradeThreshold        = 16;  // Default upgrade threshold
     static constexpr uint16_t kDiscoveryMaxJitter            = 250; // Max jitter delay Discovery Responses (in msec).
     static constexpr uint16_t kUnsolicitedDataResponseJitter = 500; // Max delay for unsol Data Response (in msec).
     static constexpr uint8_t  kLeaderDowngradeExtraDelay     = 10;  // Extra delay to downgrade leader (in sec).
@@ -2174,18 +2276,31 @@ private:
     public:
         RouterRoleTransition(void);
 
-        bool    IsPending(void) const { return (mTimeout != 0); }
-        void    StartTimeout(void);
-        void    StopTimeout(void) { mTimeout = 0; }
-        void    IncreaseTimeout(uint8_t aIncrement) { mTimeout += aIncrement; }
-        uint8_t GetTimeout(void) const { return mTimeout; }
-        bool    HandleTimeTick(void);
-        uint8_t GetJitter(void) const { return mJitter; }
-        void    SetJitter(uint8_t aJitter) { mJitter = aJitter; }
+        enum Transition : uint8_t
+        {
+            kNotTransitioning = 0,
+            kUpgrading        = 1,
+            kDowngrading      = 2
+        };
+
+        Transition GetTransition(void) const { return mTransition; }
+
+        // When pending, the upgrade/downgrade should occur on the next HandleTimeTick()
+        bool IsUpgradePending(void) const { return mTransition == kUpgrading && mTimeout == 0; }
+        bool IsDowngradePending(void) const { return mTransition == kDowngrading && mTimeout == 0; }
+
+        void ClearTransition(void);
+        void StartDowngradeTransition(uint16_t aRouterDowngradeTransitionDelayMinimum,
+                                      uint16_t aRouterDowngradeTransitionDelayMaximum);
+        void StartUpgradeTransition(uint16_t aRouterSelectionJitter);
+
+        void     IncreaseTimeout(uint8_t aIncrement) { mTimeout += aIncrement; }
+        uint16_t GetTimeout(void) const { return mTimeout; }
+        void     HandleTimeTick(void);
 
     private:
-        uint8_t mTimeout;
-        uint8_t mJitter;
+        uint16_t   mTimeout;
+        Transition mTransition;
     };
 
 #endif
@@ -2392,7 +2507,7 @@ private:
     Error    ReadAndProcessRouteTlvOnFtdChild(RxInfo &aRxInfo, uint8_t aParentId);
     void     StopAdvertiseTrickleTimer(void);
     uint32_t DetermineAdvertiseIntervalMax(void) const;
-    Error    SendAddressSolicit(RouterUpgradeReason aReason);
+    Error    SendAddressSolicit(RouterUpgradeReason aReason, RouterUpgradeReasonDetail aReasonDetail);
     void     ProcessAddressSolicit(AddrSolicitInfo &aInfo);
     void     SendAddressRelease(void);
     void     SendMulticastAdvertisement(void);
@@ -2419,10 +2534,15 @@ private:
     void     SetChildStateToValid(Child &aChild);
     bool     HasChildren(void);
     void     RemoveChildren(void);
+    uint8_t  GetNumExcessRouters(void) const;
+    bool     ShouldDowngrade(void) const;
     bool     ShouldDowngrade(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
     bool     NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const;
     void     HandleAdvertiseTrickleTimer(void);
     void     HandleTimeTick(void);
+
+    RouterUpgradeReasonDetail Mle::ShouldUpgrade() const { return ShouldUpgrade(kUpgradeDetailNone); }
+    RouterUpgradeReasonDetail ShouldUpgrade(RouterUpgradeReasonDetail aReasonDetail) const;
 
     template <Uri kUri> void HandleTmf(Coap::Msg &aMsg);
 
@@ -2501,6 +2621,8 @@ private:
     bool mRouterEligible : 1;
     bool mAddressSolicitPending : 1;
     bool mAddressSolicitRejected : 1;
+    bool mPriorizedRouterUpgradeReason : 1;
+    bool mPriorizedParent : 1;
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     bool mCcmEnabled : 1;
     bool mThreadVersionCheckEnabled : 1;
@@ -2510,6 +2632,11 @@ private:
     uint8_t mNetworkIdTimeout;
     uint8_t mRouterUpgradeThreshold;
     uint8_t mRouterDowngradeThreshold;
+
+    uint16_t mRouterUpgradeTransitionTimingMaximum;
+    uint16_t mRouterDowngradeTransitionDelayMinimum;
+    uint16_t mRouterDowngradeTransitionDelayMaximum;
+
     uint8_t mLeaderWeight;
     uint8_t mPreviousPartitionRouterIdSequence;
     uint8_t mPreviousPartitionIdTimeout;

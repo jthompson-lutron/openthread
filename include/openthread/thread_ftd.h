@@ -195,6 +195,43 @@ otError otThreadSetRouterEligible(otInstance *aInstance, bool aEligible);
 otError otThreadSetPreferredRouterId(otInstance *aInstance, uint8_t aRouterId);
 
 /**
+ * Indicates whether or not the router upgrades have priority.
+ *
+ * @param[in]  aInstance A pointer to an OpenThread instance.
+ *
+ * @retval TRUE   If priority upgrade reason is Enabled
+ * @retval FALSE  If priority upgrade reason is Disabled.
+ */
+bool otThreadIsPriorityRouterUpgradeReasonEnabled(otInstance *aInstance);
+
+/**
+ * Set whether or not the router upgrades have priority.
+ *
+ * @param[in]  aInstance  A pointer to an OpenThread instance.
+ * @param[in]  aEnable    TRUE to enable the status, FALSE to disable it.
+ */
+void otThreadSetPriorityRouterUpgradeReasonEnabledStatus(otInstance *aInstance, bool aEnable);
+
+/**
+ * Indicates whether or not the device has parent priority.
+ *
+ * @param[in]  aInstance A pointer to an OpenThread instance.
+ *
+ * @retval TRUE   If priority parent status is Enabled
+ * @retval FALSE  If priority parent status is Disabled.
+ */
+bool otThreadIsPriorityParentEnabled(otInstance *aInstance);
+
+/**
+ * Set whether or not the device has parent priority.
+ *
+ * @param[in]  aInstance  A pointer to an OpenThread instance.
+ * @param[in]  aEnable    TRUE to enable the status, FALSE to disable it.
+ */
+void otThreadSetPriorityParentEnabledStatus(otInstance *aInstance, bool aEnable);
+
+
+/**
  * Represents the power supply property on a device.
  *
  * This is used as a property in `otDeviceProperties` to calculate the leader weight.
@@ -514,7 +551,7 @@ void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThresho
  *
  * @sa otThreadSetRouterSelectionJitter
  */
-uint8_t otThreadGetRouterSelectionJitter(otInstance *aInstance);
+uint16_t otThreadGetRouterSelectionJitter(otInstance *aInstance);
 
 /**
  * Set the ROUTER_SELECTION_JITTER parameter used in the REED/Router role.
@@ -527,7 +564,35 @@ uint8_t otThreadGetRouterSelectionJitter(otInstance *aInstance);
  *
  * @sa otThreadGetRouterSelectionJitter
  */
-void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint8_t aRouterJitter);
+void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint16_t aRouterJitter);
+
+/**
+ * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+ *
+ * @returns The stored Router Downgrade Transition Timing Minimum.
+ */
+uint16_t otThreadGetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance);
+
+/**
+ * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
+ *
+ * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
+ */
+void otThreadSetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance, uint16_t aTiming);
+
+/**
+ * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+ *
+ * @returns The stored Router Downgrade Transition Timing Maximum.
+ */
+uint16_t otThreadGetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance);
+
+/**
+ * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
+ *
+ * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
+ */
+void otThreadSetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance, uint16_t aTiming);
 
 /**
  * Gets diagnostic information for an attached Child by its Child ID or RLOC16.

@@ -112,6 +112,7 @@ Done
 - [rloc16](#rloc16)
 - [route](#route)
 - [router](#router-list)
+- [routerconfig](#routerconfig)
 - [routerdowngradethreshold](#routerdowngradethreshold)
 - [routereligible](#routereligible)
 - [routerselectionjitter](#routerselectionjitter)
@@ -3920,6 +3921,31 @@ Cost: 0
 Link Quality In: 3
 Link Quality Out: 3
 Age: 7
+Done
+```
+
+### routerconfig
+
+Gets the router priority, threshold, and transition time parameters.
+
+```bash
+> routerconfig
+upgrade priority: 0
+parent priority: 0
+upgrade threshold: 16
+downgrade threshold: 23
+upgrade transition time max: 120
+downgrade transition time min: 0
+downgrade transition time max: 120
+Done
+```
+
+### routerconfig \<upgrade_priority\> \<parent_priority\> \<upgrade_threshold\> \<downgrade_threshold\> \<upgrade_time_max\> \<downgrade_time_min\> \<downgrade_time_max\>
+
+Sets the router priority, threshold, and transition time parameters.
+
+```bash
+> routerconfig 1 1 16 23 120 0 120
 Done
 ```
 
