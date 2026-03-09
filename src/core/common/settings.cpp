@@ -44,6 +44,24 @@ RegisterLogModule("Settings");
 
 // LCOV_EXCL_START
 
+#if OPENTHREAD_FTD
+bool SettingsBase::RouterConfiguration::IsDefault(void)
+{
+    return (mRouterConfigurationBitmap == 0 && mRouterDowngradeThreshold < 0 && mRouterUpgradeThreshold < 0 &&
+            mRouterUpgradeTransitionTimingMaximum == 0 && mRouterDowngradeTransitionTimingMinimum == 0 &&
+            mRouterDowngradeTransitionTimingMaximum == 0);
+}
+bool SettingsBase::RouterConfiguration::operator!=(const RouterConfiguration &aOther) const
+{
+    return (mRouterConfigurationBitmap != aOther.GetRouterConfigurationBitmap() ||
+            mRouterDowngradeThreshold != aOther.GetRouterDowngradeThreshold() ||
+            mRouterUpgradeThreshold != aOther.GetRouterUpgradeThreshold() ||
+            mRouterUpgradeTransitionTimingMaximum != aOther.GetRouterUpgradeTransitionTimingMaximum() ||
+            mRouterDowngradeTransitionTimingMinimum != aOther.GetRouterDowngradeTransitionTimingMinimum() ||
+            mRouterDowngradeTransitionTimingMaximum != aOther.GetRouterDowngradeTransitionTimingMaximum());
+}
+#endif // OPENTHREAD_FTD
+
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
 
 void SettingsBase::NetworkInfo::Log(Action aAction) const
@@ -113,21 +131,6 @@ void SettingsBase::BorderAgentId::Log(Action aAction, const MeshCoP::BorderAgent
 #endif
 
 #if OPENTHREAD_FTD
-bool SettingsBase::RouterConfiguration::IsDefault(void)
-{
-    return (mRouterConfigurationBitmap == 0 && mRouterDowngradeThreshold < 0 && mRouterUpgradeThreshold < 0 &&
-            mRouterUpgradeTransitionTimingMaximum == 0 && mRouterDowngradeTransitionTimingMinimum == 0 &&
-            mRouterDowngradeTransitionTimingMaximum == 0);
-}
-bool SettingsBase::RouterConfiguration::operator!=(const RouterConfiguration &aOther) const
-{
-    return (mRouterConfigurationBitmap != aOther.GetRouterConfigurationBitmap() ||
-            mRouterDowngradeThreshold != aOther.GetRouterDowngradeThreshold() ||
-            mRouterUpgradeThreshold != aOther.GetRouterUpgradeThreshold() ||
-            mRouterUpgradeTransitionTimingMaximum != aOther.GetRouterUpgradeTransitionTimingMaximum() ||
-            mRouterDowngradeTransitionTimingMinimum != aOther.GetRouterDowngradeTransitionTimingMinimum() ||
-            mRouterDowngradeTransitionTimingMaximum != aOther.GetRouterDowngradeTransitionTimingMaximum());
-}
 void SettingsBase::RouterConfiguration::Log(Action aAction) const
 {
     LogInfo(
