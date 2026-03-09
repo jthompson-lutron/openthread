@@ -234,7 +234,10 @@ void otThreadSetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance, ui
     AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeTransitionTimingMinimum(aTiming);
 }
 
-uint16_t otThreadGetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance);
+uint16_t otThreadGetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance)
+{
+    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterDowngradeTransitionTimingMaximum();
+}
 
 void otThreadSetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance, uint16_t aTiming)
 {

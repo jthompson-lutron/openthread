@@ -192,23 +192,23 @@ Error Mle::BecomeRouter(uint8_t aReasonDetail)
     RouterUpgradeReason reason;
 
     // Select a single RouterUpgradeReason from the priority of aReasonDetail fields
-    if (aReasonDetail & kUpgradeDetailPriorityUpgradeMask != 0)
+    if ((aReasonDetail & kUpgradeDetailPriorityUpgradeMask) != 0)
     {
         reason = kReasonParentPartitionChangeOrPriorityUpgrade;
     }
-    else if (aReasonDetail & kUpgradeDetailParentPartitionChangeMask != 0)
+    else if ((aReasonDetail & kUpgradeDetailParentPartitionChangeMask) != 0)
     {
         reason = kReasonParentPartitionChangeOrPriorityUpgrade;
     }
-    else if (aReasonDetail & kUpgradeDetailHaveChildIdRequestMask != 0)
+    else if ((aReasonDetail & kUpgradeDetailHaveChildIdRequestMask) != 0)
     {
         reason = kReasonParentPartitionChangeOrPriorityUpgrade;
     }
-    else if (aReasonDetail & kUpgradeDetailBorderRouterRequestMask != 0)
+    else if ((aReasonDetail & kUpgradeDetailBorderRouterRequestMask) != 0)
     {
         reason = kReasonBorderRouterRequest;
     }
-    else if (aReasonDetail & kUpgradeDetailTooFewRoutersMask != 0)
+    else if ((aReasonDetail & kUpgradeDetailTooFewRoutersMask) != 0)
     {
         // Any of the reasons above may also have the "too few routers" reason
         // but take priority over this.
@@ -3833,7 +3833,6 @@ bool Mle::ShouldDowngrade(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
     // with Router ID `aNeighborId` along with its `aRouteTlv`.
 
     bool    shouldDowngrade   = false;
-    uint8_t activeRouterCount = mRouterTable.GetActiveRouterCount();
     uint8_t count;
 
     VerifyOrExit(IsRouter());
@@ -4099,8 +4098,6 @@ void Mle::RouterRoleTransition::StartUpgradeTransition(uint16_t aRouterSelection
 
 void Mle::RouterRoleTransition::HandleTimeTick(void)
 {
-    bool expired = false;
-
     VerifyOrExit(mTimeout > 0);
     mTimeout--;
 

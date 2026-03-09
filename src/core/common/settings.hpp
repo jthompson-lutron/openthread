@@ -854,7 +854,7 @@ public:
          *
          * @returns The Router Configuration Bitmap.
          */
-        bool GetRouterConfigurationBitmap(void) const { return mRouterConfigurationBitmap; }
+        uint8_t GetRouterConfigurationBitmap(void) const { return mRouterConfigurationBitmap; }
 
         /**
          * Sets the bitmap representing the router configuration.

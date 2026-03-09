@@ -130,8 +130,11 @@ bool SettingsBase::RouterConfiguration::operator!=(const RouterConfiguration &aO
 }
 void SettingsBase::RouterConfiguration::Log(Action aAction) const
 {
-    LogInfo("%s RouterConfiguration {configuration:0x%02x, ineligible:%d, down:%d, up:%d}", ActionToString(aAction),
-            GetRouterConfigurationBitmap(), GetRouterDowngradeThreshold(), GetRouterUpgradeThreshold());
+    LogInfo(
+        "%s RouterConfiguration {configuration:0x%02x, down:%d, up:%d, uptimemax:%d, downtimemin:%d, downtimemax:%d}",
+        ActionToString(aAction), GetRouterConfigurationBitmap(), GetRouterDowngradeThreshold(),
+        GetRouterUpgradeThreshold(), GetRouterUpgradeTransitionTimingMaximum(),
+        GetRouterDowngradeTransitionTimingMinimum(), GetRouterDowngradeTransitionTimingMaximum());
 }
 #endif
 

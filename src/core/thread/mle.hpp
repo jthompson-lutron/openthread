@@ -2541,7 +2541,7 @@ private:
     void     HandleAdvertiseTrickleTimer(void);
     void     HandleTimeTick(void);
 
-    RouterUpgradeReasonDetail Mle::ShouldUpgrade() const { return ShouldUpgrade(kUpgradeDetailNone); }
+    RouterUpgradeReasonDetail ShouldUpgrade() const { return ShouldUpgrade(kUpgradeDetailNone); }
     RouterUpgradeReasonDetail ShouldUpgrade(RouterUpgradeReasonDetail aReasonDetail) const;
 
     template <Uri kUri> void HandleTmf(Coap::Msg &aMsg);
