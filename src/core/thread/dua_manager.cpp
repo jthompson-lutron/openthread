@@ -235,7 +235,7 @@ void DuaManager::RemoveDomainUnicastAddress(void)
     Get<ThreadNetif>().RemoveUnicastAddress(mDomainUnicastAddress);
 }
 
-void DuaManager::UpdateRegistrationDelay(uint8_t aDelay)
+void DuaManager::UpdateRegistrationDelay(uint16_t aDelay)
 {
     if (mDelay.mFields.mRegistrationDelay == 0 || mDelay.mFields.mRegistrationDelay > aDelay)
     {

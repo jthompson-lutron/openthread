@@ -1031,7 +1031,7 @@ public:
      *
      * @returns The timeout in seconds till router role transition, or zero if not pending role transition.
      */
-    uint8_t GetRouterRoleTransitionTimeout(void) const { return mRouterRoleTransition.GetTimeout(); }
+    uint16_t GetRouterRoleTransitionTimeout(void) const { return mRouterRoleTransition.GetTimeout(); }
 
     /**
      * Returns the ROUTER_UPGRADE_THRESHOLD value.

@@ -206,7 +206,7 @@ private:
 
     void AddDomainUnicastAddress(void);
     void RemoveDomainUnicastAddress(void);
-    void UpdateRegistrationDelay(uint8_t aDelay);
+    void UpdateRegistrationDelay(uint16_t aDelay);
 #endif
 
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_TMF_PROXY_DUA_ENABLE
@@ -258,7 +258,7 @@ private:
             uint16_t mReregistrationDelay; // Delay (in seconds) for DUA re-registration.
             uint8_t  mCheckDelay;          // Delay (in seconds) for checking whether or not registration is required.
 #if OPENTHREAD_CONFIG_DUA_ENABLE
-            uint8_t mRegistrationDelay; // Delay (in seconds) for DUA registration.
+            uint16_t mRegistrationDelay; // Delay (in seconds) for DUA registration.
 #endif
         } mFields;
         uint32_t mValue; // Non-zero indicates timer should start.
