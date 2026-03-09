@@ -27,10 +27,8 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-import ipaddress
 import unittest
 
-import command
 import config
 import thread_cert
 
@@ -137,7 +135,8 @@ class DowngradeOnSecPolicyChange(thread_cert.TestCase):
 
         # Make sure both leader and router are downgraded and are now `detached`.
 
-        self.simulator.go(80)
+        # Maximum delay is 120s + 10s for the leader
+        self.simulator.go(130)
         self.assertEqual(leader.get_state(), 'detached')
         self.assertEqual(router.get_state(), 'detached')
 

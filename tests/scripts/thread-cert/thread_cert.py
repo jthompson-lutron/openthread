@@ -27,7 +27,6 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-import binascii
 import json
 import logging
 import os
@@ -140,13 +139,13 @@ class TestCase(NcpSupportMixin, unittest.TestCase):
     def _setUp(self):
         """Create simulator, nodes and apply configurations.
         """
+        self.nodes = {}
         self._clean_up_tmp()
 
         key_manager = config.create_default_thread_key_manager()
 
         self.simulator = config.create_default_simulator(
             config.create_default_thread_message_factory(key_manager) if self.USE_MESSAGE_FACTORY else None)
-        self.nodes = {}
 
         os.environ['LD_LIBRARY_PATH'] = '/tmp/thread-wireshark'
 
