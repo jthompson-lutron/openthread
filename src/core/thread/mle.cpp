@@ -403,10 +403,13 @@ void Mle::Restore(void)
         uint16_t downgradeTimingMin        = routerConfiguration.GetRouterDowngradeTransitionTimingMinimum();
         uint16_t downgradeTimingMax        = routerConfiguration.GetRouterDowngradeTransitionTimingMaximum();
 
-        SetRouterEligible((routerConfigurationBitmap & routerConfiguration.kRouterIneligibleStatusMask) == 0);
-        SetPriorityRouterUpgradeReasonEnabledStatus((routerConfigurationBitmap &
-                                                    routerConfiguration.kPriorityUpgradeReasonEnabledMask) != 0);
-        SetPriorityParentEnabledStatus((routerConfigurationBitmap & routerConfiguration.kPriorityParentEnabledMask) != 0);
+        // Note: Must be initialized after mDeviceMode
+        IgnoreError(
+            SetRouterEligible((routerConfigurationBitmap & routerConfiguration.kRouterIneligibleStatusMask) == 0));
+        SetPriorityRouterUpgradeReasonEnabledStatus(
+            (routerConfigurationBitmap & routerConfiguration.kPriorityUpgradeReasonEnabledMask) != 0);
+        SetPriorityParentEnabledStatus((routerConfigurationBitmap & routerConfiguration.kPriorityParentEnabledMask) !=
+                                       0);
 
         // Use the existing value initialized from a default, if negative
         SetRouterThresholds((routerUpgradeThreshold >= 0) ? routerUpgradeThreshold : mRouterUpgradeThreshold,
