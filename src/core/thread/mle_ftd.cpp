@@ -1610,19 +1610,22 @@ void Mle::HandleTimeTick(void)
         break;
 
     case kRoleChild:
-        if (mRouterRoleTransition.IsUpgradePending() && IsRouterEligible())
+        if (IsRouterEligible())
         {
-            RouterUpgradeReasonDetail reasonDetail = ShouldUpgrade();
-
-            mRouterRoleTransition.ClearTransition();
-
-            if (reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality())
+            if (mRouterRoleTransition.IsUpgradePending())
             {
-                IgnoreError(BecomeRouter(reasonDetail));
-            }
-            else
-            {
-                mAnnounceHandler.HandleRouterRoleTransitionAttemptDone();
+                RouterUpgradeReasonDetail reasonDetail = ShouldUpgrade();
+
+                mRouterRoleTransition.ClearTransition();
+
+                if (reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality())
+                {
+                    IgnoreError(BecomeRouter(reasonDetail));
+                }
+                else
+                {
+                    mAnnounceHandler.HandleRouterRoleTransitionAttemptDone();
+                }
             }
 
             if (!mAdvertiseTrickleTimer.IsRunning())
