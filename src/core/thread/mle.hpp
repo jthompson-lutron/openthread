@@ -1034,11 +1034,17 @@ public:
     uint16_t GetRouterRoleTransitionTimeout(void) const { return mRouterRoleTransition.GetTimeout(); }
 
     /**
-     * Returns the ROUTER_UPGRADE_THRESHOLD value.
+     * Returns the ROUTER_UPGRADE_THRESHOLD value, which may be less than the default threshold and may only be greater
+     * than the default threshold when the priority upgrade reason is enabled.
      *
      * @returns The ROUTER_UPGRADE_THRESHOLD value.
      */
-    uint8_t GetRouterUpgradeThreshold(void) const { return mRouterUpgradeThreshold; }
+    uint8_t GetRouterUpgradeThreshold(void) const
+    {
+        return ((mRouterUpgradeThreshold <= kRouterUpgradeThreshold) || IsPriorityRouterUpgradeReasonEnabled())
+                   ? mRouterUpgradeThreshold
+                   : kRouterUpgradeThreshold;
+    }
 
     /**
      * Sets the ROUTER_UPGRADE_THRESHOLD value.

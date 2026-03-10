@@ -420,9 +420,10 @@ void Mle::HandleChildStart(void)
 
 exit:
 
-    if (mRouterTable.GetActiveRouterCount() >= mRouterUpgradeThreshold &&
+    if (mRouterTable.GetActiveRouterCount() >= GetRouterUpgradeThreshold() &&
         (!IsRouterIdValid(mPreviousRouterId) || !HasChildren()))
     {
+        // This REED will not attempt to upgrade to a router soon, so it can forget its previous router ID.
         SetRouterId(kInvalidRouterId);
     }
 }
@@ -3593,7 +3594,9 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
     switch (aInfo.mReason)
     {
     case kReasonTooFewRouters:
-        VerifyOrExit(mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold);
+        // Compare the upgrade threshold to a fixed constant, so upgrading REEDs configured with a different threshold
+        // will not repeatedly send address solicit requests.
+        VerifyOrExit(mRouterTable.GetActiveRouterCount() < kRouterUpgradeThreshold);
         break;
 
     case kReasonHaveChildIdRequest:
@@ -3601,7 +3604,9 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
         break;
 
     case kReasonBorderRouterRequest:
-        if ((mRouterTable.GetActiveRouterCount() >= mRouterUpgradeThreshold) &&
+        // Compare the upgrade threshold to a fixed constant, so upgrading REEDs configured with a different threshold
+        // will not repeatedly send address solicit requests.
+        if ((mRouterTable.GetActiveRouterCount() >= kRouterUpgradeThreshold) &&
             (Get<NetworkData::Leader>().CountBorderRouters(NetworkData::kRouterRoleOnly) >=
              kRouterUpgradeBorderRouterRequestThreshold))
         {
@@ -3798,7 +3803,7 @@ void Mle::FillConnectivityTlvValue(ConnectivityTlvValue &aTlvValue) const
 
 uint8_t Mle::GetNumExcessRouters(void) const
 {
-    uint8_t excessRouters = 0;
+    uint8_t excessRouters     = 0;
     uint8_t activeRouterCount = mRouterTable.GetActiveRouterCount();
 
     if (activeRouterCount > mRouterDowngradeThreshold)
@@ -3832,7 +3837,7 @@ bool Mle::ShouldDowngrade(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
     // to downgrade after receiving info for a neighboring router
     // with Router ID `aNeighborId` along with its `aRouteTlv`.
 
-    bool    shouldDowngrade   = false;
+    bool    shouldDowngrade = false;
     uint8_t count;
 
     VerifyOrExit(IsRouter());
@@ -3883,7 +3888,7 @@ uint8_t Mle::ShouldUpgrade(RouterUpgradeReasonDetail aReasonDetail) const
     RouterUpgradeReasonDetail reasonDetail      = aReasonDetail;
     uint8_t                   activeRouterCount = mRouterTable.GetActiveRouterCount();
 
-    if (activeRouterCount < mRouterUpgradeThreshold)
+    if (activeRouterCount < GetRouterUpgradeThreshold())
     {
         reasonDetail |= kUpgradeDetailTooFewRoutersMask;
     }

@@ -565,10 +565,10 @@ void Mle::Store(void)
         (IsRouterEligible() ? 0 : newRouterConfiguration.kRouterIneligibleStatusMask) |
         (IsPriorityParentEnabled() ? newRouterConfiguration.kPriorityParentEnabledMask : 0));
 
-    // Values will use placeholders if matching initialized defaults
-    if (mRouterUpgradeThreshold != kRouterUpgradeThreshold)
+    // Values will use default placeholders if effective values match initialized defaults
+    if (GetRouterUpgradeThreshold() != kRouterUpgradeThreshold)
     {
-        newRouterConfiguration.SetRouterUpgradeThreshold(mRouterUpgradeThreshold);
+        newRouterConfiguration.SetRouterUpgradeThreshold(GetRouterUpgradeThreshold());
     }
     if (mRouterDowngradeThreshold != kRouterDowngradeThreshold)
     {
