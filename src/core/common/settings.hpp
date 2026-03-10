@@ -120,7 +120,7 @@ public:
         kKeyBrOnLinkPrefixes    = OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES,
         kKeyBorderAgentId       = OT_SETTINGS_KEY_BORDER_AGENT_ID,
         kKeyTcatCommrCert       = OT_SETTINGS_KEY_TCAT_COMMR_CERT,
-        kKeyRouterConfiguration = OT_SETTINGS_ROUTER_CONFIGURATION,
+        kKeyRouterConfiguration = OT_SETTINGS_KEY_ROUTER_CONFIGURATION,
     };
 
     static constexpr Key kLastKey = kKeyRouterConfiguration; ///< The last (numerically) enumerator value in `Key`.

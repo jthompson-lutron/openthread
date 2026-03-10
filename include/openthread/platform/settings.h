@@ -76,7 +76,7 @@ enum
     OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES  = 0x0010, ///< BR local on-link prefixes.
     OT_SETTINGS_KEY_BORDER_AGENT_ID      = 0x0011, ///< Unique Border Agent/Router ID.
     OT_SETTINGS_KEY_TCAT_COMMR_CERT      = 0x0012, ///< TCAT Commissioner certificate
-    OT_SETTINGS_ROUTER_CONFIGURATION     = 0x0013, ///< Router Configuration
+    OT_SETTINGS_KEY_ROUTER_CONFIGURATION = 0x0013, ///< Router Configuration
 
     // Deprecated and reserved key values:
     //
