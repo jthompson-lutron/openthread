@@ -110,11 +110,13 @@ void Test_5_2_6(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
+    leader.Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
     leader.Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
     leader.Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
 
     for (uint16_t i = 0; i < kInitialRouterCount - 2; i++)
     {
+        routers[i]->Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
         routers[i]->Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
         routers[i]->Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
     }
@@ -153,6 +155,7 @@ void Test_5_2_6(void)
      */
     Node &router24 = nexus.CreateNode();
     router24.SetName("ROUTER_24");
+    router24.Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
     router24.Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
     router24.Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
 
