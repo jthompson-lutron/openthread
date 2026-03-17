@@ -65,16 +65,20 @@ def verify(pv):
     #
     #   - Description: Ensure topology is formed correctly.
     #   - Pass Criteria: N/A
+    #
     print("Step 1: All")
     pkts.filter_mle_cmd(consts.MLE_ADVERTISEMENT).\
         filter_wpan_src64(LEADER).\
         must_next()
+    # Ignore advertisements from REED states
     router1_pkt = pkts.filter_mle_cmd(consts.MLE_ADVERTISEMENT).\
         filter_wpan_src64(ROUTER_1).\
+        filter(lambda p: (p.mle.tlv.source_addr & 0x1FF) == 0).\
         must_next()
     router1_id = (router1_pkt.mle.tlv.source_addr >> 10)
     router2_pkt = pkts.filter_mle_cmd(consts.MLE_ADVERTISEMENT).\
         filter_wpan_src64(ROUTER_2).\
+        filter(lambda p: (p.mle.tlv.source_addr & 0x1FF) == 0).\
         must_next()
     router2_id = (router2_pkt.mle.tlv.source_addr >> 10)
 
@@ -114,8 +118,10 @@ def verify(pv):
     #     - The DUT MUST reset the MLE Advertisement trickle timer and send an Advertisement.
     print("Step 5: Router_2")
     # Verify Router 2 becomes router again (sends advertisement) and get its new ID
+    # Ignore advertisements from REED states
     router2_rejoin_pkt = pkts.filter_mle_cmd(consts.MLE_ADVERTISEMENT).\
         filter_wpan_src64(ROUTER_2).\
+        filter(lambda p: (p.mle.tlv.source_addr & 0x1FF) == 0).\
         must_next()
     router2_id_reattached = (router2_rejoin_pkt.mle.tlv.source_addr >> 10)
 
