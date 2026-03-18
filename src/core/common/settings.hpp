@@ -736,10 +736,6 @@ public:
     public:
         static constexpr Key kKey = kKeyRouterConfiguration; ///< The associated key.
 
-        static constexpr uint8_t kRouterIneligibleStatusMask       = 0x01; ///< Ineligible Status bitmask
-        static constexpr uint8_t kPriorityUpgradeReasonEnabledMask = 0x02; ///< Priority Upgrade Reason bitmask
-        static constexpr uint8_t kPriorityParentEnabledMask        = 0x04; ///< Priority Parent bitmask
-
         /**
          * Initializes the `RouterConfiguration` object.
          */
@@ -756,7 +752,7 @@ public:
          * @retval TRUE if the configuration is as initialized.
          * @retval FALSE if a setting is non-default.
          */
-        bool IsDefault(void);
+        bool IsDefault(void) const;
 
         /**
          * Returns the stored Router Downgrade Threshold.

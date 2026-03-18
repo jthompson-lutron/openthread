@@ -244,7 +244,6 @@ void otThreadSetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance, ui
     AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeTransitionTimingMaximum(aTiming);
 }
 
-
 otError otThreadGetChildInfoById(otInstance *aInstance, uint16_t aChildId, otChildInfo *aChildInfo)
 {
     return AsCoreType(aInstance).Get<ChildTable>().GetChildInfoById(aChildId, AsCoreType(aChildInfo));

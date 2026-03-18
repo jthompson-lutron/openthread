@@ -404,12 +404,10 @@ void Mle::Restore(void)
         uint16_t downgradeTimingMax        = routerConfiguration.GetRouterDowngradeTransitionTimingMaximum();
 
         // Note: Must be initialized after mDeviceMode
-        IgnoreError(
-            SetRouterEligible((routerConfigurationBitmap & routerConfiguration.kRouterIneligibleStatusMask) == 0));
+        IgnoreError(SetRouterEligible((routerConfigurationBitmap & kRouterConfigIneligibleStatusMask) == 0));
         SetPriorityRouterUpgradeReasonEnabledStatus(
-            (routerConfigurationBitmap & routerConfiguration.kPriorityUpgradeReasonEnabledMask) != 0);
-        SetPriorityParentEnabledStatus((routerConfigurationBitmap & routerConfiguration.kPriorityParentEnabledMask) !=
-                                       0);
+            (routerConfigurationBitmap & kRouterConfigPriorityUpgradeReasonEnabledMask) != 0);
+        SetPriorityParentEnabledStatus((routerConfigurationBitmap & kRouterConfigPriorityParentEnabledMask) != 0);
 
         // Use the existing value initialized from a default, if negative
         SetRouterThresholds((routerUpgradeThreshold >= 0) ? routerUpgradeThreshold : mRouterUpgradeThreshold,
@@ -561,9 +559,9 @@ void Mle::Store(void)
 #if OPENTHREAD_FTD
     newRouterConfiguration.Init();
     newRouterConfiguration.SetRouterConfigurationBitmap(
-        (IsPriorityRouterUpgradeReasonEnabled() ? newRouterConfiguration.kPriorityUpgradeReasonEnabledMask : 0) |
-        (IsRouterEligible() ? 0 : newRouterConfiguration.kRouterIneligibleStatusMask) |
-        (IsPriorityParentEnabled() ? newRouterConfiguration.kPriorityParentEnabledMask : 0));
+        (IsPriorityRouterUpgradeReasonEnabled() ? kRouterConfigPriorityUpgradeReasonEnabledMask : 0) |
+        (IsRouterEligible() ? 0 : kRouterConfigIneligibleStatusMask) |
+        (IsPriorityParentEnabled() ? kRouterConfigPriorityParentEnabledMask : 0));
 
     // Values will use default placeholders if effective values match initialized defaults
     if (GetRouterUpgradeThreshold() != kRouterUpgradeThreshold)

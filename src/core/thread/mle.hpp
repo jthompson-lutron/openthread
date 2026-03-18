@@ -1474,6 +1474,10 @@ private:
     static constexpr int8_t kParentPriorityLow         = -1;
     static constexpr int8_t kParentPriorityUnspecified = -2;
 
+    static constexpr uint8_t kRouterConfigIneligibleStatusMask             = 0x01; ///< Ineligible Status bitmask
+    static constexpr uint8_t kRouterConfigPriorityUpgradeReasonEnabledMask = 0x02; ///< Priority Upgrade Reason bitmask
+    static constexpr uint8_t kRouterConfigPriorityParentEnabledMask        = 0x04; ///< Priority Parent bitmask
+
 #endif // OPENTHREAD_FTD
 
     //------------------------------------------------------------------------------------------------------------------

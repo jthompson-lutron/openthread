@@ -230,7 +230,6 @@ bool otThreadIsPriorityParentEnabled(otInstance *aInstance);
  */
 void otThreadSetPriorityParentEnabledStatus(otInstance *aInstance, bool aEnable);
 
-
 /**
  * Represents the power supply property on a device.
  *

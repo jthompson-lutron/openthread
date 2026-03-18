@@ -1615,9 +1615,8 @@ void Mle::HandleTimeTick(void)
             if (mRouterRoleTransition.IsUpgradePending())
             {
                 RouterUpgradeReasonDetail reasonDetail = ShouldUpgrade();
-                bool shouldAttemptUpgrade = reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality();
-                Error upgradeError = kErrorNone;
-
+                bool  shouldAttemptUpgrade = reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality();
+                Error upgradeError         = kErrorNone;
 
                 if (shouldAttemptUpgrade)
                 {

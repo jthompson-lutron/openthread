@@ -45,7 +45,7 @@ RegisterLogModule("Settings");
 // LCOV_EXCL_START
 
 #if OPENTHREAD_FTD
-bool SettingsBase::RouterConfiguration::IsDefault(void)
+bool SettingsBase::RouterConfiguration::IsDefault(void) const
 {
     return (mRouterConfigurationBitmap == 0 && mRouterDowngradeThreshold < 0 && mRouterUpgradeThreshold < 0 &&
             mRouterUpgradeTransitionTimingMaximum == 0 && mRouterDowngradeTransitionTimingMinimum == 0 &&
