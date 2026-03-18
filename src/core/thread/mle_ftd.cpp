@@ -1615,27 +1615,36 @@ void Mle::HandleTimeTick(void)
             if (mRouterRoleTransition.IsUpgradePending())
             {
                 RouterUpgradeReasonDetail reasonDetail = ShouldUpgrade();
+                bool shouldAttemptUpgrade = reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality();
+                Error upgradeError = kErrorNone;
+
+
+                if (shouldAttemptUpgrade)
+                {
+                    upgradeError = BecomeRouter(reasonDetail);
+                }
 
                 mRouterRoleTransition.ClearTransition();
-
-                if (reasonDetail != kUpgradeDetailNone && HasNeighborWithGoodLinkQuality())
+                if (shouldAttemptUpgrade && upgradeError != kErrorNone)
                 {
-                    IgnoreError(BecomeRouter(reasonDetail));
+                    // Skip processing timeouts and parent selection an attempt to upgrade just started
+                    ExitNow();
                 }
                 else
                 {
+                    // If an attempt to upgrade failed when pending, then check if transition completion actions
+                    // should be done
                     mAnnounceHandler.HandleRouterRoleTransitionAttemptDone();
                 }
             }
 
-            if (!mAdvertiseTrickleTimer.IsRunning())
+            // Start REED advertisements when an attempt to upgrade to router status is not in progress
+            if (!mAdvertiseTrickleTimer.IsRunning() && !mAddressSolicitPending)
             {
                 SendMulticastAdvertisement();
 
                 mAdvertiseTrickleTimer.Start(TrickleTimer::kModePlainTimer, kReedAdvIntervalMin, kReedAdvIntervalMax);
             }
-
-            ExitNow();
         }
 
         OT_FALL_THROUGH;
@@ -1649,25 +1658,21 @@ void Mle::HandleTimeTick(void)
             mAttacher.Attach(kSamePartition);
         }
 
-        if (mRouterRoleTransition.IsDowngradePending())
-        {
-            if (ShouldDowngrade())
-            {
-                LogNote("Downgrade to REED");
-                mAttacher.Attach(kDowngradeToReed);
-            }
-            mRouterRoleTransition.ClearTransition();
-        }
-
         OT_FALL_THROUGH;
 
     case kRoleLeader:
+
         if (mRouterRoleTransition.IsDowngradePending())
         {
             if (!IsRouterEligible())
             {
                 LogInfo("No longer router eligible");
                 IgnoreError(BecomeDetached());
+            }
+            else if (ShouldDowngrade())
+            {
+                LogNote("Downgrade to REED");
+                mAttacher.Attach(kDowngradeToReed);
             }
             mRouterRoleTransition.ClearTransition();
         }
@@ -3821,6 +3826,7 @@ bool Mle::ShouldDowngrade(void) const
     bool    shouldDowngrade   = false;
     uint8_t activeRouterCount = mRouterTable.GetActiveRouterCount();
 
+    VerifyOrExit(mRole != kRoleLeader);
     VerifyOrExit(activeRouterCount > mRouterDowngradeThreshold);
 
     // Check that we have fewer children than three times the number
