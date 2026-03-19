@@ -180,10 +180,10 @@ enum Command : uint8_t
  */
 enum RouterUpgradeReason : uint8_t
 {
-    kReasonTooFewRouters                          = 2, ///< Too few routers.
-    kReasonHaveChildIdRequest                     = 3, ///< Have pending Child ID Request.
-    kReasonParentPartitionChangeOrPriorityUpgrade = 4, ///< Parent Partition change or priority upgrade reason.
-    kReasonBorderRouterRequest                    = 5, ///< Device is Border Router.
+    kReasonTooFewRouters                        = 2, ///< Too few routers.
+    kReasonHaveChildIdRequest                   = 3, ///< Have pending Child ID Request.
+    kReasonParentPartitionChangeOrManagedRouter = 4, ///< Parent Partition change or Managed Router
+    kReasonBorderRouterRequest                  = 5, ///< Device is Border Router.
 };
 
 // (Router Upgrade Reason) Detail masks for Status Detail TLV corresponding with RouterUpgradeReason values
@@ -193,7 +193,7 @@ constexpr RouterUpgradeReasonDetail kUpgradeDetailTooFewRoutersMask         = 0x
 constexpr RouterUpgradeReasonDetail kUpgradeDetailHaveChildIdRequestMask    = 0x02; ///< Have pending Child ID Request.
 constexpr RouterUpgradeReasonDetail kUpgradeDetailParentPartitionChangeMask = 0x04; ///< Parent during Partition change.
 constexpr RouterUpgradeReasonDetail kUpgradeDetailBorderRouterRequestMask   = 0x08; ///< Border Router.
-constexpr RouterUpgradeReasonDetail kUpgradeDetailPriorityUpgradeMask       = 0x10; ///< Priority Upgrade.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailManagedRouterMask         = 0x10; ///< Managed Router.
 
 /**
  * Specifies the leader role start mode.
@@ -842,6 +842,102 @@ private:
     void IncrementNumForLinkQuality(uint8_t aLinkQuality);
 };
 
+#if OPENTHREAD_FTD
+class CapacityThreshold
+{
+public:
+    CapacityThreshold(otCapacityThreshold aCapacityThreshold);
+
+    static bool IsValidValue(otCapacityThreshold aCapacityThreshold);
+
+    otCapacityThreshold GetDefaultCodeOrValue(otCapacityThreshold aDefaultValue) const;
+    uint16_t            GetThresholdOfMaximum(uint16_t aFullMaxCount) const;
+    void                SetCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault);
+
+    // -------------------------------------------------------------------------------------------
+    // Valid values specifying whether values should remain unchanged or use defaults when applied
+
+    static constexpr uint8_t kCapacityUnchanged  = OT_CAPACITY_USED_UNCHANGED;
+    static constexpr uint8_t kCapacityUseDefault = OT_CAPACITY_USED_DEFAULT;
+
+    // --------
+    // Defaults
+
+    // +1 Priority disabled by default (<0 full).
+    static constexpr otCapacityThreshold kParentPriorityThresholdDefault = OT_CAPACITY_USED_NONE;
+    // -1 Priority at > 2/3 full by default
+    static constexpr otCapacityThreshold kParentDeprioritizationThresholdDefault = OT_CAPACITY_USED_2_THIRDS;
+
+private:
+    otCapacityThreshold mCapacityThreshold;
+};
+
+/**
+ * Configuration data used to store or restore the Router Configuration.
+ */
+namespace RouterConfiguration {
+
+constexpr uint8_t kRouterRoleConfigManagedStatusEnabledMask = 0x01; ///< Use Managed Upgrade Reason bitmask
+constexpr uint8_t kRouterRoleConfigIneligibleStatusMask     = 0x02; ///< Ineligible Status bitmask
+constexpr uint8_t kRouterRoleConfigMask =
+    kRouterRoleConfigManagedStatusEnabledMask | kRouterRoleConfigIneligibleStatusMask;
+
+// -------------------------------------------------------------------------------------------
+// Valid values specifying whether values should remain unchanged or use defaults when applied
+
+constexpr uint8_t  kRouterThresholdUnchanged         = 0xFE;
+constexpr uint8_t  kRouterThresholdUseDefault        = 0xFF;
+constexpr uint16_t kRouterTransitionTimingUnchanged  = 0xFFFE;
+constexpr uint16_t kRouterTransitionTimingUseDefault = 0xFFFF;
+
+// --------------
+// Default values
+
+/**
+ * Default upgrade threshold value
+ *
+ * This is also used when the leader handles the @ref RouterUpgradeReason::kReasonTooFewRouters reason
+ * when handling an Address Solicit request, to maintain backwards compatibility.
+ */
+constexpr uint8_t kRouterUpgradeThresholdDefault   = 16;
+constexpr uint8_t kRouterDowngradeThresholdDefault = 23; ///< Default downgrade threshold value
+
+constexpr uint16_t kRouterTransitionMinimumDefault = 0;   ///< (in sec) Default transition minimum
+constexpr uint16_t kRouterTransitionJitterDefault  = 120; ///< (in sec) Default transition timing jitter
+
+/**
+ * Check whether the configuration data applies default values to all parameters.
+ *
+ * @retval TRUE if all values would become defaults when applied.
+ * @retval FALSE if any value does not apply a default.
+ */
+bool IsDefault(const otRouterConfiguration &aRouterConfiguration);
+
+/**
+ * Check whether effective parameters match exactly.
+ *
+ * Excludes reserved bits in the mRouterRoleConfigurationBitmap, so that reserved bits will not be overwritten
+ * in the stored settings while the used bits continue to match.
+ *
+ * @param[in]  aRouterConfiguration  The first Router Configuratin to compare
+ * @param[in]  aOther  The other Router Configuratin to compare
+ *
+ * @retval TRUE if any value differs.
+ * @retval FALSE if all values match.
+ */
+bool ConfigurationsDiffer(const otRouterConfiguration &aRouterConfiguration, const otRouterConfiguration &aOther);
+
+template <typename T> T GetDefaultCodeOrValue(T &aParameterReference, T aDefaultValue, T aDefaultCode)
+{
+    return (aParameterReference == aDefaultValue) ? aDefaultCode : aParameterReference;
+}
+
+void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold);
+void ApplyTransitionTimingValue(uint16_t &aTransitionTimingReference, uint16_t aNewTiming, uint16_t aDefaultTiming);
+
+}; // namespace RouterConfiguration
+#endif
+
 /**
  * Represents a MLE Key Material
  */
@@ -971,9 +1067,11 @@ public:
 
 DefineCoreType(otLeaderData, Mle::LeaderData);
 DefineMapEnum(otDeviceRole, Mle::DeviceRole);
-#if OPENTHREAD_FTD && OPENTHREAD_CONFIG_MLE_DEVICE_PROPERTY_LEADER_WEIGHT_ENABLE
+#if OPENTHREAD_FTD
+#if OPENTHREAD_CONFIG_MLE_DEVICE_PROPERTY_LEADER_WEIGHT_ENABLE
 DefineCoreType(otDeviceProperties, Mle::DeviceProperties);
 DefineMapEnum(otPowerSupply, Mle::DeviceProperties::PowerSupply);
+#endif
 #endif
 #if OPENTHREAD_CONFIG_P2P_ENABLE && OPENTHREAD_CONFIG_WAKEUP_COORDINATOR_ENABLE
 DefineCoreType(otP2pRequest, Mle::P2pRequest);

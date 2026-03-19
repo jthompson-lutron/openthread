@@ -728,155 +728,54 @@ public:
      * Represents the router configuration.
      */
     OT_TOOL_PACKED_BEGIN
-    class RouterConfiguration : private Clearable<RouterConfiguration>
+    class RouterConfiguration
     {
         friend class Settings;
-        friend class Clearable<RouterConfiguration>;
 
     public:
         static constexpr Key kKey = kKeyRouterConfiguration; ///< The associated key.
 
-        /**
-         * Initializes the `RouterConfiguration` object.
-         */
-        void Init(void)
+        RouterConfiguration() = default;
+        RouterConfiguration(const otRouterConfiguration &aOther)
         {
-            Clear();
-            mRouterDowngradeThreshold = -1;
-            mRouterUpgradeThreshold   = -1;
+            mRouterRoleConfigurationBitmap   = aOther.mRouterRoleConfigurationBitmap;
+            mParentPriorityThreshold         = aOther.mParentPriorityThreshold;
+            mParentDeprioritizationThreshold = aOther.mParentDeprioritizationThreshold;
+            mRouterUpgradeThreshold          = aOther.mRouterUpgradeThreshold;
+            mRouterDowngradeThreshold        = aOther.mRouterDowngradeThreshold;
+            mRouterUpgradeDelayMinimum       = aOther.mRouterUpgradeDelayMinimum;
+            mRouterUpgradeDelayJitter        = aOther.mRouterUpgradeDelayJitter;
+            mRouterDowngradeDelayMinimum     = aOther.mRouterDowngradeDelayMinimum;
+            mRouterDowngradeDelayJitter      = aOther.mRouterDowngradeDelayJitter;
         }
 
         /**
-         * Check if the configuration is in its default status.
+         * Gets an unpacked copy of the Router Configuration.
          *
-         * @retval TRUE if the configuration is as initialized.
-         * @retval FALSE if a setting is non-default.
+         * @returns The Router Configuration Data.
          */
-        bool IsDefault(void) const;
-
-        /**
-         * Returns the stored Router Downgrade Threshold.
-         *
-         * @returns The stored Router Downgrade Threshold.
-         */
-        int8_t GetRouterDowngradeThreshold(void) const { return mRouterDowngradeThreshold; }
-
-        /**
-         * Sets the stored Router Downgrade Threshold.
-         *
-         * @param[in] aRouterDowngradeThreshold The Router Downgrade Threshold to store.
-         */
-        void SetRouterDowngradeThreshold(int8_t aRouterDowngradeThreshold)
+        otRouterConfiguration GetRouterConfigurationData(void) const
         {
-            mRouterDowngradeThreshold = aRouterDowngradeThreshold;
+            return otRouterConfiguration{
+                mRouterRoleConfigurationBitmap, mParentPriorityThreshold,     mParentDeprioritizationThreshold,
+                mRouterUpgradeThreshold,        mRouterDowngradeThreshold,    mRouterUpgradeDelayMinimum,
+                mRouterUpgradeDelayJitter,      mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter};
         }
-
-        /**
-         * Returns the Router Upgrade Threshold.
-         *
-         * @returns The stored Router Upgrade Threshold.
-         */
-        int8_t GetRouterUpgradeThreshold(void) const { return mRouterUpgradeThreshold; }
-
-        /**
-         * Sets the stored Router Upgrade Threshold.
-         *
-         * @param[in] aRouterUpgradeThreshold The Router Upgrade Threshold to store.
-         */
-        void SetRouterUpgradeThreshold(int8_t aRouterUpgradeThreshold)
-        {
-            mRouterUpgradeThreshold = aRouterUpgradeThreshold;
-        }
-
-        /**
-         * Returns the Router Upgrade Transition Timing Maximum (Router Selection Jitter).
-         *
-         * @returns The stored Router Upgrade Transition Timing Maximum.
-         */
-        uint16_t GetRouterUpgradeTransitionTimingMaximum(void) const { return mRouterUpgradeTransitionTimingMaximum; }
-
-        /**
-         * Sets the Router Upgrade Transition Timing Maximum (Router Selection Jitter).
-         *
-         * @param[in] aTiming The Router Upgrade Transition Timing Maximum to store.
-         */
-        void SetRouterUpgradeTransitionTimingMaximum(uint16_t aTiming)
-        {
-            mRouterUpgradeTransitionTimingMaximum = aTiming;
-        }
-
-        /**
-         * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
-         *
-         * @returns The stored Router Downgrade Transition Timing Minimum.
-         */
-        uint16_t GetRouterDowngradeTransitionTimingMinimum(void) const
-        {
-            return mRouterDowngradeTransitionTimingMinimum;
-        }
-
-        /**
-         * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
-         *
-         * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
-         */
-        void SetRouterDowngradeTransitionTimingMinimum(uint16_t aTiming)
-        {
-            mRouterDowngradeTransitionTimingMinimum = aTiming;
-        }
-
-        /**
-         * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
-         *
-         * @returns The stored Router Downgrade Transition Timing Maximum.
-         */
-        uint16_t GetRouterDowngradeTransitionTimingMaximum(void) const
-        {
-            return mRouterDowngradeTransitionTimingMaximum;
-        }
-
-        /**
-         * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
-         *
-         * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
-         */
-        void SetRouterDowngradeTransitionTimingMaximum(uint16_t aTiming)
-        {
-            mRouterDowngradeTransitionTimingMaximum = aTiming;
-        }
-
-        /**
-         * Returns the bitmap representing the router configuration.
-         *
-         * @returns The Router Configuration Bitmap.
-         */
-        uint8_t GetRouterConfigurationBitmap(void) const { return mRouterConfigurationBitmap; }
-
-        /**
-         * Sets the bitmap representing the router configuration.
-         *
-         * @param[in] aRouterConfigurationBitmap  The Router Configuration Bitmap.
-         */
-        void SetRouterConfigurationBitmap(bool aRouterConfigurationBitmap)
-        {
-            mRouterConfigurationBitmap = aRouterConfigurationBitmap;
-        }
-
-        bool operator!=(const RouterConfiguration &aOther) const;
 
     private:
         void Log(Action aAction) const;
 
-        uint8_t mRouterConfigurationBitmap; ///< Bitmap of router configuration statuses, default if 0
+        template <typename T, typename U> inline void copyField(T &dst, const U &src) { dst = static_cast<T>(src); }
 
-        // Up/Downgrade Thresholds indicate defaults when negative
-        int8_t mRouterDowngradeThreshold; ///< Downgrade threshold configured, default if negative
-        int8_t mRouterUpgradeThreshold;   ///< Upgrade threshold configured, default if negative
-
-        // Transition timing indicates the default value when zero
-        uint16_t mRouterUpgradeTransitionTimingMaximum;   ///< Jitter max for upgrade transitions, default if 0
-        uint16_t mRouterDowngradeTransitionTimingMinimum; ///< Jitter min for downgrade transitions, default if 0
-        uint16_t mRouterDowngradeTransitionTimingMaximum; ///< Jitter max for downgrade transitions, default if 0
+        uint8_t             mRouterRoleConfigurationBitmap;
+        otCapacityThreshold mParentPriorityThreshold : 4;
+        otCapacityThreshold mParentDeprioritizationThreshold : 4;
+        uint8_t             mRouterUpgradeThreshold;
+        uint8_t             mRouterDowngradeThreshold;
+        uint16_t            mRouterUpgradeDelayMinimum;
+        uint16_t            mRouterUpgradeDelayJitter;
+        uint16_t            mRouterDowngradeDelayMinimum;
+        uint16_t            mRouterDowngradeDelayJitter;
     } OT_TOOL_PACKED_END;
 #endif
 

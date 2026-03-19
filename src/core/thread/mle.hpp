@@ -781,85 +781,17 @@ public:
     Error SetRouterEligible(bool aEligible);
 
     /**
-     * Indicates whether or not the router upgrades have priority.
-     *
-     * @retval TRUE   If priority upgrade reason is Enabled
-     * @retval FALSE  If priority upgrade reason is Disabled.
-     */
-    bool IsPriorityRouterUpgradeReasonEnabled(void) const { return mPriorizedRouterUpgradeReason; }
-
-    /**
-     * Sets whether or not the router upgrades have priority.
-     *
-     * @param[in]  aEnable  TRUE to enable the status, FALSE to disable it.
-     */
-    void SetPriorityRouterUpgradeReasonEnabledStatus(bool aEnable) { mPriorizedRouterUpgradeReason = aEnable; }
-
-    /**
-     * Indicates whether or not the device has parent priority.
-     *
-     * @retval TRUE   If priority parent status is Enabled
-     * @retval FALSE  If priority parent status is Disabled.
-     */
-    bool IsPriorityParentEnabled(void) const { return mPriorizedParent; }
-
-    /**
-     * Sets whether or not the device has parent priority.
-     *
-     * @param[in]  aEnable  TRUE to enable the status, FALSE to disable it.
-     */
-    void SetPriorityParentEnabledStatus(bool aEnable) { mPriorizedParent = aEnable; }
-
-    /**
-     * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
-     *
-     * @returns The stored Router Downgrade Transition Timing Minimum.
-     */
-    uint16_t GetRouterDowngradeTransitionTimingMinimum(void) const { return mRouterDowngradeTransitionDelayMinimum; }
-
-    /**
-     * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
-     *
-     * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
-     */
-    void SetRouterDowngradeTransitionTimingMinimum(uint16_t aTiming)
-    {
-        mRouterDowngradeTransitionDelayMinimum = aTiming;
-    }
-
-    /**
-     * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
-     *
-     * @returns The stored Router Downgrade Transition Timing Maximum.
-     */
-    uint16_t GetRouterDowngradeTransitionTimingMaximum(void) const { return mRouterDowngradeTransitionDelayMaximum; }
-
-    /**
-     * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
-     *
-     * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
-     */
-    void SetRouterDowngradeTransitionTimingMaximum(uint16_t aTiming)
-    {
-        mRouterDowngradeTransitionDelayMaximum = aTiming;
-    }
-
-    /**
      * Start a router downgrade role transition at a time selected from the current preferred status.
      */
     void StartRouterRoleDowngradeTransition(void)
     {
-        mRouterRoleTransition.StartDowngradeTransition(mRouterDowngradeTransitionDelayMinimum,
-                                                       mRouterDowngradeTransitionDelayMaximum);
+        mRouterRoleTransition.StartDowngradeTransition(mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter);
     }
 
     /**
      * Start a router upgrade role transition at a time selected from the current preferred status.
      */
-    void StartUpgradeTransition(void)
-    {
-        mRouterRoleTransition.StartUpgradeTransition(mRouterUpgradeTransitionTimingMaximum);
-    }
+    void StartUpgradeTransition(void) { mRouterRoleTransition.StartUpgradeTransition(mRouterUpgradeDelayJitter); }
 
     /**
      * Indicates whether a node is the only router on the network.
@@ -1001,18 +933,26 @@ public:
     void SetNetworkIdTimeout(uint8_t aTimeout) { mNetworkIdTimeout = aTimeout; }
 
     /**
-     * Returns the ROUTER_SELECTION_JITTER value.
+     * Gets the current Router Role Configuration Data.
      *
-     * @returns The ROUTER_SELECTION_JITTER value in seconds.
+     * If the value of any parameter matches its default, then the value returned is replaced by its "UseDefault" code.
+     *
+     * @returns The the current Router Role Configuration Data.
      */
-    uint16_t GetRouterSelectionJitter(void) const { return mRouterUpgradeTransitionTimingMaximum; }
+    otRouterConfiguration GetCurrentRouterRoleConfigurationData(void);
 
     /**
-     * Sets the ROUTER_SELECTION_JITTER value.
+     * Applies the Router Role Configuration if all parameters are valid.
      *
-     * @param[in] aRouterJitter  The router selection jitter value (in seconds).
+     * @param[in]  aRouterConfigurationData The the router configuration to apply.
+     *
+     * @pre Requires mDeviceMode has been restored first to correctly apply the stored Router Eligibile state.
+     *
+     * @retval kErrorNone         Successfully applied the values.
+     * @retval kErrorInvalidArgs  Some parameters are not valid.  No changes have been applied.
+     * @retval kErrorNotCapable   The device is not capable of becoming a router.  No changes have been applied.
      */
-    void SetRouterSelectionJitter(uint16_t aRouterJitter) { mRouterUpgradeTransitionTimingMaximum = aRouterJitter; }
+    Error ApplyRouterRoleConfigurationData(otRouterConfiguration aRouterConfigurationData);
 
     /**
      * Indicates whether or not router role transition (upgrade from REED or downgrade to REED) is pending.
@@ -1034,24 +974,11 @@ public:
     uint16_t GetRouterRoleTransitionTimeout(void) const { return mRouterRoleTransition.GetTimeout(); }
 
     /**
-     * Returns the ROUTER_UPGRADE_THRESHOLD value, which may be less than the default threshold and may only be greater
-     * than the default threshold when the priority upgrade reason is enabled.
+     * Returns the ROUTER_UPGRADE_THRESHOLD value.
      *
      * @returns The ROUTER_UPGRADE_THRESHOLD value.
      */
-    uint8_t GetRouterUpgradeThreshold(void) const
-    {
-        return ((mRouterUpgradeThreshold <= kRouterUpgradeThreshold) || IsPriorityRouterUpgradeReasonEnabled())
-                   ? mRouterUpgradeThreshold
-                   : kRouterUpgradeThreshold;
-    }
-
-    /**
-     * Sets the ROUTER_UPGRADE_THRESHOLD value.
-     *
-     * @param[in]  aThreshold  The ROUTER_UPGRADE_THRESHOLD value.
-     */
-    void SetRouterUpgradeThreshold(uint8_t aThreshold) { mRouterUpgradeThreshold = aThreshold; }
+    uint8_t GetRouterUpgradeThreshold(void) const { return mRouterUpgradeThreshold; }
 
     /**
      * Returns the ROUTER_DOWNGRADE_THRESHOLD value.
@@ -1059,30 +986,6 @@ public:
      * @returns The ROUTER_DOWNGRADE_THRESHOLD value.
      */
     uint8_t GetRouterDowngradeThreshold(void) const { return mRouterDowngradeThreshold; }
-
-    /**
-     * Sets the ROUTER_DOWNGRADE_THRESHOLD value.
-     *
-     * @param[in]  aThreshold  The ROUTER_DOWNGRADE_THRESHOLD value.
-     */
-    void SetRouterDowngradeThreshold(uint8_t aThreshold) { mRouterDowngradeThreshold = aThreshold; }
-
-    /**
-     * Sets the current router thresholds, if valid.
-     *
-     * Thresholds are valid when aUpgradeThreshold <= aDowngradeThreshold.
-     *
-     * @param[in]  aDowngradeThreshold  The router downgrade threshold value.
-     * @param[in]  aUpgradeThreshold  The router downgrade threshold value.
-     */
-    void SetRouterThresholds(uint8_t aUpgradeThreshold, uint8_t aDowngradeThreshold)
-    {
-        if (aUpgradeThreshold <= aDowngradeThreshold)
-        {
-            mRouterUpgradeThreshold   = aUpgradeThreshold;
-            mRouterDowngradeThreshold = aDowngradeThreshold;
-        }
-    }
 
     /**
      * Returns the MLE_CHILD_ROUTER_LINKS value.
@@ -1171,23 +1074,6 @@ public:
      */
     void SetSteeringData(const Mac::ExtAddress *aExtAddress);
 #endif
-
-    /**
-     * Gets the assigned parent priority.
-     *
-     * @returns The assigned parent priority value, -2 means not assigned.
-     */
-    int8_t GetAssignParentPriority(void) const { return mParentPriority; }
-
-    /**
-     * Sets the parent priority.
-     *
-     * @param[in]  aParentPriority  The parent priority value.
-     *
-     * @retval kErrorNone           Successfully set the parent priority.
-     * @retval kErrorInvalidArgs    If the parent priority value is not among 1, 0, -1 and -2.
-     */
-    Error SetAssignParentPriority(int8_t aParentPriority);
 
     /**
      * Gets the longest MLE Timeout TLV for all active MTD children.
@@ -1435,9 +1321,6 @@ private:
     static constexpr uint32_t kMaxLeaderToRouterTimeout      = 90000;  // (in msec)
     static constexpr uint8_t  kMinDowngradeNeighbors         = 7;
     static constexpr uint8_t  kNetworkIdTimeout              = 120; // (in sec)
-    static constexpr uint8_t  kRouterSelectionJitter         = 120; // (in sec) Default transition timing maximum
-    static constexpr uint8_t  kRouterDowngradeThreshold      = 23;  // Default downgrade threshold
-    static constexpr uint8_t  kRouterUpgradeThreshold        = 16;  // Default upgrade threshold
     static constexpr uint16_t kDiscoveryMaxJitter            = 250; // Max jitter delay Discovery Responses (in msec).
     static constexpr uint16_t kUnsolicitedDataResponseJitter = 500; // Max delay for unsol Data Response (in msec).
     static constexpr uint8_t  kLeaderDowngradeExtraDelay     = 10;  // Extra delay to downgrade leader (in sec).
@@ -1473,10 +1356,6 @@ private:
     static constexpr int8_t kParentPriorityMedium      = 0;
     static constexpr int8_t kParentPriorityLow         = -1;
     static constexpr int8_t kParentPriorityUnspecified = -2;
-
-    static constexpr uint8_t kRouterConfigIneligibleStatusMask             = 0x01; ///< Ineligible Status bitmask
-    static constexpr uint8_t kRouterConfigPriorityUpgradeReasonEnabledMask = 0x02; ///< Priority Upgrade Reason bitmask
-    static constexpr uint8_t kRouterConfigPriorityParentEnabledMask        = 0x04; ///< Priority Parent bitmask
 
 #endif // OPENTHREAD_FTD
 
@@ -2628,24 +2507,25 @@ private:
 
 #if OPENTHREAD_FTD
 
+    bool mUseManagedRouterUpgradeReason : 1;
     bool mRouterEligible : 1;
     bool mAddressSolicitPending : 1;
     bool mAddressSolicitRejected : 1;
-    bool mPriorizedRouterUpgradeReason : 1;
-    bool mPriorizedParent : 1;
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     bool mCcmEnabled : 1;
     bool mThreadVersionCheckEnabled : 1;
 #endif
+
     uint8_t mRouterId;
     uint8_t mPreviousRouterId;
     uint8_t mNetworkIdTimeout;
     uint8_t mRouterUpgradeThreshold;
     uint8_t mRouterDowngradeThreshold;
 
-    uint16_t mRouterUpgradeTransitionTimingMaximum;
-    uint16_t mRouterDowngradeTransitionDelayMinimum;
-    uint16_t mRouterDowngradeTransitionDelayMaximum;
+    uint16_t mRouterUpgradeDelayMinimum;
+    uint16_t mRouterUpgradeDelayJitter;
+    uint16_t mRouterDowngradeDelayMinimum;
+    uint16_t mRouterDowngradeDelayJitter;
 
     uint8_t mLeaderWeight;
     uint8_t mPreviousPartitionRouterIdSequence;
@@ -2655,12 +2535,20 @@ private:
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     uint8_t mMaxChildIpAddresses;
 #endif
-    int8_t   mParentPriority;
+
+    // +1 parent priority if below the enumerated priority threshold.
+    // Effectively disabled if CapacityThreshold::CAPACITY_USED_NONE.
+    CapacityThreshold mParentPriorityThreshold;
+    // -1 parent priority if above the enumerated deprioritization threshold.
+    // Effectively disabled if CapacityThreshold::CAPACITY_FULL.
+    CapacityThreshold mParentDeprioritizationThreshold;
+
     uint32_t mPreviousPartitionIdRouter;
     uint32_t mPreviousPartitionId;
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     uint32_t mPreferredLeaderPartitionId;
 #endif
+
     TrickleTimer               mAdvertiseTrickleTimer;
     ChildTable                 mChildTable;
     RouterTable                mRouterTable;

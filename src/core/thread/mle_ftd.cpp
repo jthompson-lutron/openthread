@@ -192,17 +192,17 @@ Error Mle::BecomeRouter(uint8_t aReasonDetail)
     RouterUpgradeReason reason;
 
     // Select a single RouterUpgradeReason from the priority of aReasonDetail fields
-    if ((aReasonDetail & kUpgradeDetailPriorityUpgradeMask) != 0)
+    if ((aReasonDetail & kUpgradeDetailManagedRouterMask) != 0)
     {
-        reason = kReasonParentPartitionChangeOrPriorityUpgrade;
+        reason = kReasonParentPartitionChangeOrManagedRouter;
     }
     else if ((aReasonDetail & kUpgradeDetailParentPartitionChangeMask) != 0)
     {
-        reason = kReasonParentPartitionChangeOrPriorityUpgrade;
+        reason = kReasonParentPartitionChangeOrManagedRouter;
     }
     else if ((aReasonDetail & kUpgradeDetailHaveChildIdRequestMask) != 0)
     {
-        reason = kReasonParentPartitionChangeOrPriorityUpgrade;
+        reason = kReasonParentPartitionChangeOrManagedRouter;
     }
     else if ((aReasonDetail & kUpgradeDetailBorderRouterRequestMask) != 0)
     {
@@ -3501,6 +3501,85 @@ exit:
     mAnnounceHandler.HandleRouterRoleTransitionAttemptDone();
 }
 
+otRouterConfiguration Mle::GetCurrentRouterRoleConfigurationData(void)
+{
+    bool routerRoleConfigurationBitmap =
+        ((mUseManagedRouterUpgradeReason ? RouterConfiguration::kRouterRoleConfigManagedStatusEnabledMask : 0) |
+         (IsRouterEligible() ? 0 : RouterConfiguration::kRouterRoleConfigIneligibleStatusMask));
+    return otRouterConfiguration{
+        routerRoleConfigurationBitmap,
+        mParentPriorityThreshold.GetDefaultCodeOrValue(CapacityThreshold::kParentPriorityThresholdDefault),
+        mParentDeprioritizationThreshold.GetDefaultCodeOrValue(
+            CapacityThreshold::kParentDeprioritizationThresholdDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterUpgradeThreshold,
+                                                       RouterConfiguration::kRouterUpgradeThresholdDefault,
+                                                       RouterConfiguration::kRouterThresholdUseDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterDowngradeThreshold,
+                                                       RouterConfiguration::kRouterDowngradeThresholdDefault,
+                                                       RouterConfiguration::kRouterThresholdUseDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterUpgradeDelayMinimum,
+                                                       RouterConfiguration::kRouterTransitionMinimumDefault,
+                                                       RouterConfiguration::kRouterTransitionTimingUseDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterUpgradeDelayJitter,
+                                                       RouterConfiguration::kRouterTransitionJitterDefault,
+                                                       RouterConfiguration::kRouterTransitionTimingUseDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterDowngradeDelayMinimum,
+                                                       RouterConfiguration::kRouterTransitionMinimumDefault,
+                                                       RouterConfiguration::kRouterTransitionTimingUseDefault),
+        RouterConfiguration::GetDefaultCodeOrValue(mRouterDowngradeDelayJitter,
+                                                       RouterConfiguration::kRouterTransitionJitterDefault,
+                                                       RouterConfiguration::kRouterTransitionTimingUseDefault)};
+}
+
+Error Mle::ApplyRouterRoleConfigurationData(otRouterConfiguration aRouterConfiguration)
+{
+    Error error = kErrorNone;
+
+    // Don't apply if any of the parameters are invalid
+    VerifyOrExit(CapacityThreshold::IsValidValue(aRouterConfiguration.mParentPriorityThreshold),
+                 error = kErrorInvalidArgs);
+    VerifyOrExit(CapacityThreshold::IsValidValue(aRouterConfiguration.mParentDeprioritizationThreshold),
+                 error = kErrorInvalidArgs);
+    VerifyOrExit(aRouterConfiguration.mRouterUpgradeThreshold <= aRouterConfiguration.mRouterDowngradeThreshold,
+                 error = kErrorInvalidArgs);
+
+    SuccessOrExit(error = SetRouterEligible(!(aRouterConfiguration.mRouterRoleConfigurationBitmap &
+                                              RouterConfiguration::kRouterRoleConfigIneligibleStatusMask)));
+
+    // If successful, apply all values, which may not change if "unchanged" codes are configured
+
+    mUseManagedRouterUpgradeReason = aRouterConfiguration.mRouterRoleConfigurationBitmap &
+                                     RouterConfiguration::kRouterRoleConfigManagedStatusEnabledMask;
+
+    // When applying, also check for values to indicate using defaults or unchanged values
+    mParentPriorityThreshold.SetCapacityThreshold(aRouterConfiguration.mParentPriorityThreshold,
+                                                  CapacityThreshold::kParentPriorityThresholdDefault);
+    mParentDeprioritizationThreshold.SetCapacityThreshold(aRouterConfiguration.mParentDeprioritizationThreshold,
+                                                          CapacityThreshold::kParentDeprioritizationThresholdDefault);
+
+    RouterConfiguration::ApplyRouterThreshold(mRouterUpgradeThreshold, aRouterConfiguration.mRouterUpgradeThreshold,
+                                                  RouterConfiguration::kRouterUpgradeThresholdDefault);
+    RouterConfiguration::ApplyRouterThreshold(mRouterDowngradeThreshold,
+                                                  aRouterConfiguration.mRouterDowngradeThreshold,
+                                                  RouterConfiguration::kRouterDowngradeThresholdDefault);
+
+    RouterConfiguration::ApplyTransitionTimingValue(mRouterUpgradeDelayMinimum,
+                                                        aRouterConfiguration.mRouterUpgradeDelayMinimum,
+                                                        RouterConfiguration::kRouterTransitionMinimumDefault);
+    RouterConfiguration::ApplyTransitionTimingValue(mRouterUpgradeDelayJitter,
+                                                        aRouterConfiguration.mRouterUpgradeDelayJitter,
+                                                        RouterConfiguration::kRouterTransitionJitterDefault);
+    RouterConfiguration::ApplyTransitionTimingValue(mRouterDowngradeDelayMinimum,
+                                                        aRouterConfiguration.mRouterDowngradeDelayMinimum,
+                                                        RouterConfiguration::kRouterTransitionMinimumDefault);
+    RouterConfiguration::ApplyTransitionTimingValue(mRouterDowngradeDelayJitter,
+                                                        aRouterConfiguration.mRouterDowngradeDelayJitter,
+                                                        RouterConfiguration::kRouterTransitionJitterDefault);
+
+exit:
+    return error;
+}
+
 Error Mle::SetChildRouterLinks(uint8_t aChildRouterLinks)
 {
     Error error = kErrorNone;
@@ -3603,17 +3682,17 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
     case kReasonTooFewRouters:
         // Compare the upgrade threshold to a fixed constant, so upgrading REEDs configured with a different threshold
         // will not repeatedly send address solicit requests.
-        VerifyOrExit(mRouterTable.GetActiveRouterCount() < kRouterUpgradeThreshold);
+        VerifyOrExit(mRouterTable.GetActiveRouterCount() < RouterConfiguration::kRouterUpgradeThresholdDefault);
         break;
 
     case kReasonHaveChildIdRequest:
-    case kReasonParentPartitionChangeOrPriorityUpgrade:
+    case kReasonParentPartitionChangeOrManagedRouter:
         break;
 
     case kReasonBorderRouterRequest:
         // Compare the upgrade threshold to a fixed constant, so upgrading REEDs configured with a different threshold
         // will not repeatedly send address solicit requests.
-        if ((mRouterTable.GetActiveRouterCount() >= kRouterUpgradeThreshold) &&
+        if ((mRouterTable.GetActiveRouterCount() >= RouterConfiguration::kRouterUpgradeThresholdDefault) &&
             (Get<NetworkData::Leader>().CountBorderRouters(NetworkData::kRouterRoleOnly) >=
              kRouterUpgradeBorderRouterRequestThreshold))
         {
@@ -3738,40 +3817,16 @@ exit:
 
 void Mle::DetermineConnectivity(Connectivity &aConnectivity) const
 {
+    uint16_t maxChildrenAllowed    = mChildTable.GetMaxChildrenAllowed();
+    uint16_t numValidChildren      = mChildTable.GetNumChildren(Child::kInStateValid);
+    uint16_t priorityThreshold     = mParentPriorityThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
+    uint16_t deprioritizeThreshold = mParentDeprioritizationThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
+
     aConnectivity.Clear();
 
-    aConnectivity.mParentPriority = GetAssignParentPriority();
-
-    if (aConnectivity.mParentPriority == kParentPriorityUnspecified)
-    {
-        uint16_t numChildren = mChildTable.GetNumChildren(Child::kInStateValid);
-        uint16_t maxAllowed  = mChildTable.GetMaxChildrenAllowed();
-
-        int16_t  remainingCapacity = maxAllowed - numChildren;
-        uint16_t capacityThird     = maxAllowed / 3;
-
-        if (remainingCapacity < 0 || (remainingCapacity < capacityThird))
-        {
-            // Low parent priority with <1/3 child capacity, even when enabled as a parent with priority
-            aConnectivity.mParentPriority = kParentPriorityLow;
-        }
-        else if (IsPriorityParentEnabled())
-        {
-            uint16_t halfCapacity = maxAllowed >> 1; // Rounded down
-            if (remainingCapacity > halfCapacity)
-            {
-                aConnectivity.mParentPriority = kParentPriorityHigh;
-            }
-            else
-            {
-                aConnectivity.mParentPriority = kParentPriorityMedium;
-            }
-        }
-        else
-        {
-            aConnectivity.mParentPriority = kParentPriorityMedium;
-        }
-    }
+    aConnectivity.mParentPriority = (numValidChildren < priorityThreshold)       ? kParentPriorityHigh
+                                    : (numValidChildren > deprioritizeThreshold) ? kParentPriorityLow
+                                                                                 : kParentPriorityMedium;
 
     if (IsChild())
     {
@@ -3901,9 +3956,9 @@ uint8_t Mle::ShouldUpgrade(RouterUpgradeReasonDetail aReasonDetail) const
         reasonDetail |= kUpgradeDetailTooFewRoutersMask;
     }
 
-    if (IsPriorityRouterUpgradeReasonEnabled() && reasonDetail != kUpgradeDetailNone)
+    if (mUseManagedRouterUpgradeReason && reasonDetail != kUpgradeDetailNone)
     {
-        reasonDetail |= kUpgradeDetailPriorityUpgradeMask;
+        reasonDetail |= kUpgradeDetailManagedRouterMask;
     }
 
     return reasonDetail;
@@ -3992,19 +4047,6 @@ void Mle::RemoveChildren(void)
     }
 }
 
-Error Mle::SetAssignParentPriority(int8_t aParentPriority)
-{
-    Error error = kErrorNone;
-
-    VerifyOrExit(aParentPriority <= kParentPriorityHigh && aParentPriority >= kParentPriorityUnspecified,
-                 error = kErrorInvalidArgs);
-
-    mParentPriority = aParentPriority;
-
-exit:
-    return error;
-}
-
 Error Mle::GetMaxChildTimeout(uint32_t &aTimeout) const
 {
     Error error = kErrorNotFound;
@@ -4068,8 +4110,8 @@ const char *Mle::RouterUpgradeReasonToString(uint8_t aReason)
     case kReasonHaveChildIdRequest:
         str = "HaveChildIdRequest";
         break;
-    case kReasonParentPartitionChangeOrPriorityUpgrade:
-        str = "kReasonParentPartitionChangeOrPriorityUpgrade";
+    case kReasonParentPartitionChangeOrManagedRouter:
+        str = "kReasonParentPartitionChangeOrManagedRouter";
         break;
     case kReasonBorderRouterRequest:
         str = "BorderRouterRequest";

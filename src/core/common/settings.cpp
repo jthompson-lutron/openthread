@@ -44,24 +44,6 @@ RegisterLogModule("Settings");
 
 // LCOV_EXCL_START
 
-#if OPENTHREAD_FTD
-bool SettingsBase::RouterConfiguration::IsDefault(void) const
-{
-    return (mRouterConfigurationBitmap == 0 && mRouterDowngradeThreshold < 0 && mRouterUpgradeThreshold < 0 &&
-            mRouterUpgradeTransitionTimingMaximum == 0 && mRouterDowngradeTransitionTimingMinimum == 0 &&
-            mRouterDowngradeTransitionTimingMaximum == 0);
-}
-bool SettingsBase::RouterConfiguration::operator!=(const RouterConfiguration &aOther) const
-{
-    return (mRouterConfigurationBitmap != aOther.GetRouterConfigurationBitmap() ||
-            mRouterDowngradeThreshold != aOther.GetRouterDowngradeThreshold() ||
-            mRouterUpgradeThreshold != aOther.GetRouterUpgradeThreshold() ||
-            mRouterUpgradeTransitionTimingMaximum != aOther.GetRouterUpgradeTransitionTimingMaximum() ||
-            mRouterDowngradeTransitionTimingMinimum != aOther.GetRouterDowngradeTransitionTimingMinimum() ||
-            mRouterDowngradeTransitionTimingMaximum != aOther.GetRouterDowngradeTransitionTimingMaximum());
-}
-#endif // OPENTHREAD_FTD
-
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
 
 void SettingsBase::NetworkInfo::Log(Action aAction) const
@@ -133,11 +115,14 @@ void SettingsBase::BorderAgentId::Log(Action aAction, const MeshCoP::BorderAgent
 #if OPENTHREAD_FTD
 void SettingsBase::RouterConfiguration::Log(Action aAction) const
 {
-    LogInfo(
-        "%s RouterConfiguration {configuration:0x%02x, down:%d, up:%d, uptimemax:%d, downtimemin:%d, downtimemax:%d}",
-        ActionToString(aAction), GetRouterConfigurationBitmap(), GetRouterDowngradeThreshold(),
-        GetRouterUpgradeThreshold(), GetRouterUpgradeTransitionTimingMaximum(),
-        GetRouterDowngradeTransitionTimingMinimum(), GetRouterDowngradeTransitionTimingMaximum());
+    LogInfo("%s RouterConfiguration(0) {configuration:0x%02x, parentpriority+1:%d, parentpriority-1:%d",
+            ActionToString(aAction), mRouterRoleConfigurationBitmap, mParentPriorityThreshold,
+            mParentDeprioritizationThreshold);
+    LogInfo("%s RouterConfiguration(1) {upgradethreshold:%d, updelaymin:%d, updelayjitter:%d}", ActionToString(aAction),
+            mRouterUpgradeThreshold, mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter);
+    LogInfo("%s RouterConfiguration(2) {downgradethreshold:%d, downdelaymin:%d, downdelayjitter:%d}",
+            ActionToString(aAction), mRouterDowngradeThreshold, mRouterDowngradeDelayMinimum,
+            mRouterDowngradeDelayJitter);
 }
 #endif
 

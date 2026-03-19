@@ -195,42 +195,6 @@ otError otThreadSetRouterEligible(otInstance *aInstance, bool aEligible);
 otError otThreadSetPreferredRouterId(otInstance *aInstance, uint8_t aRouterId);
 
 /**
- * Indicates whether or not the router upgrades have priority.
- *
- * @param[in]  aInstance A pointer to an OpenThread instance.
- *
- * @retval TRUE   If priority upgrade reason is Enabled
- * @retval FALSE  If priority upgrade reason is Disabled.
- */
-bool otThreadIsPriorityRouterUpgradeReasonEnabled(otInstance *aInstance);
-
-/**
- * Set whether or not the router upgrades have priority.
- *
- * @param[in]  aInstance  A pointer to an OpenThread instance.
- * @param[in]  aEnable    TRUE to enable the status, FALSE to disable it.
- */
-void otThreadSetPriorityRouterUpgradeReasonEnabledStatus(otInstance *aInstance, bool aEnable);
-
-/**
- * Indicates whether or not the device has parent priority.
- *
- * @param[in]  aInstance A pointer to an OpenThread instance.
- *
- * @retval TRUE   If priority parent status is Enabled
- * @retval FALSE  If priority parent status is Disabled.
- */
-bool otThreadIsPriorityParentEnabled(otInstance *aInstance);
-
-/**
- * Set whether or not the device has parent priority.
- *
- * @param[in]  aInstance  A pointer to an OpenThread instance.
- * @param[in]  aEnable    TRUE to enable the status, FALSE to disable it.
- */
-void otThreadSetPriorityParentEnabledStatus(otInstance *aInstance, bool aEnable);
-
-/**
  * Represents the power supply property on a device.
  *
  * This is used as a property in `otDeviceProperties` to calculate the leader weight.
@@ -413,29 +377,106 @@ uint8_t otThreadGetNetworkIdTimeout(otInstance *aInstance);
  */
 void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout);
 
+static constexpr uint8_t kRouterRoleConfigManagedStatusEnabledMask = 0x01; ///< Use Managed Upgrade Reason bitmask
+static constexpr uint8_t kRouterRoleConfigIneligibleStatusMask     = 0x02; ///< Ineligible Status bitmask
+
 /**
- * Get the ROUTER_UPGRADE_THRESHOLD parameter used in the REED role.
+ * Enumerated thresholds for parent priority thresholds based on capacity utilization.
+ */
+typedef enum
+{
+    OT_CAPACITY_USED_NONE       = 0,
+    OT_CAPACITY_USED_1_QUARTER  = 1,
+    OT_CAPACITY_USED_1_THIRD    = 2,
+    OT_CAPACITY_USED_1_HALF     = 3,
+    OT_CAPACITY_USED_2_THIRDS   = 4,
+    OT_CAPACITY_USED_3_QUARTERS = 5,
+    OT_CAPACITY_FULL            = 6,
+    OT_CAPACITY_USED_UNCHANGED  = 0xE,
+    OT_CAPACITY_USED_DEFAULT    = 0xF
+} otCapacityThreshold;
+
+/**
+ * Parameters controlling the Router Configuration and priority.
+ */
+typedef struct
+{
+    uint8_t mRouterRoleConfigurationBitmap; ///< Flags for enabling/disabling configurations, including reserved bits
+
+    /** The Valid Child capacity threshold for using Parent Priority 1 */
+    otCapacityThreshold mParentPriorityThreshold : 4;
+    /** The capacity threshold for using Parent Priority -1 */
+    otCapacityThreshold mParentDeprioritizationThreshold : 4;
+
+    uint8_t mRouterUpgradeThreshold;   ///< The number of active routers below which upgrades will be attempted
+    uint8_t mRouterDowngradeThreshold; ///< The number of active routers above which downgrades will be performed
+
+    uint16_t mRouterUpgradeDelayMinimum;   ///< The fixed delay before an upgrade in seconds
+    uint16_t mRouterUpgradeDelayJitter;    ///< The additional randomized time in seconds before an upgrade
+    uint16_t mRouterDowngradeDelayMinimum; ///< The fixed delay before a downgrade in seconds
+    uint16_t mRouterDowngradeDelayJitter;  ///< The additional randomized time in seconds before a downgrade
+} otRouterConfiguration;
+
+/**
+ * Get the current Router Configuration.
  *
  * @param[in]  aInstance A pointer to an OpenThread instance.
  *
- * @returns The ROUTER_UPGRADE_THRESHOLD value.
+ * @returns The current Router Configuration.
  *
- * @sa otThreadSetRouterUpgradeThreshold
+ * @sa otThreadGetRouterConfigurationProfile
+ * @sa otThreadSetSpecifiedRouterConfiguration
+ * @sa otThreadSetRouterConfigurationProfile
  */
-uint8_t otThreadGetRouterUpgradeThreshold(otInstance *aInstance);
+otRouterConfiguration otThreadGetCurrentRouterConfiguration(otInstance *aInstance);
 
 /**
- * Set the ROUTER_UPGRADE_THRESHOLD parameter used in the Leader role.
+ * Set the Router Configuration to specified parameters.
  *
- * @note This API is reserved for testing and demo purposes only. Changing settings with
- * this API will render a production application non-compliant with the Thread Specification.
+ * @param[in]  aInstance            A pointer to an OpenThread instance.
+ * @param[in]  aRouterConfiguration The current Router Configuration.
  *
- * @param[in]  aInstance   A pointer to an OpenThread instance.
- * @param[in]  aThreshold  The ROUTER_UPGRADE_THRESHOLD value.
- *
- * @sa otThreadGetRouterUpgradeThreshold
+ * @sa otThreadGetCurrentRouterConfiguration
  */
-void otThreadSetRouterUpgradeThreshold(otInstance *aInstance, uint8_t aThreshold);
+void otThreadSetSpecifiedRouterConfiguration(otInstance *aInstance, otRouterConfiguration aRouterConfiguration);
+
+/**
+ * Specified Router Configuration profiles.
+ */
+typedef enum
+{
+    OT_ROUTER_CONFIGURATION_DEFAULT,    ///< The default router configuration for FTDs
+    OT_ROUTER_CONFIGURATION_PREFERRED,  ///< Preferred attempts to transition to router status and have parent priority
+    OT_ROUTER_CONFIGURATION_RELUCTANT,  ///< Deprioritized but capable of router status
+    OT_ROUTER_CONFIGURATION_INELIGIBLE, ///< Ineligible to become or continue function as a router
+} otRouterConfigurationProfile;
+
+/**
+ * Get the profile of the given Router Configuration.
+ *
+ * @param[in]  aInstance            A pointer to an OpenThread instance.
+ * @param[in]  aRouterConfiguration A current Router Configuration.
+ * @param[out] aProfile             A current Router Configuration.
+ *
+ * @retval OT_ERROR_NONE      Successfully released the router id.
+ * @retval OT_ERROR_NOT_FOUND The router configuration doesn't match a known profile.
+ *
+ * @sa otThreadGetCurrentRouterConfiguration
+ * @sa otThreadSetRouterConfigurationProfile
+ */
+otError otThreadGetRouterConfigurationProfile(otInstance                   *aInstance,
+                                              otRouterConfiguration         aRouterConfiguration,
+                                              otRouterConfigurationProfile *aProfile);
+
+/**
+ * Set the Router Configuration to the specified profile.
+ *
+ * @param[in]  aInstance A pointer to an OpenThread instance.
+ * @param[in]  aProfile  The specified Router Configuration profile.
+ *
+ * @sa otThreadGetCurrentRouterConfiguration
+ */
+void otThreadSetRouterConfigurationProfile(otInstance *aInstance, otRouterConfigurationProfile aProfile);
 
 /**
  * Get the MLE_CHILD_ROUTER_LINKS parameter used in the REED role.
@@ -516,82 +557,6 @@ otError otThreadBecomeRouter(otInstance *aInstance);
  *                                 or smaller than current leader's weight, or device is not router eligible.
  */
 otError otThreadBecomeLeader(otInstance *aInstance);
-
-/**
- * Get the ROUTER_DOWNGRADE_THRESHOLD parameter used in the Router role.
- *
- * @param[in]  aInstance  A pointer to an OpenThread instance.
- *
- * @returns The ROUTER_DOWNGRADE_THRESHOLD value.
- *
- * @sa otThreadSetRouterDowngradeThreshold
- */
-uint8_t otThreadGetRouterDowngradeThreshold(otInstance *aInstance);
-
-/**
- * Set the ROUTER_DOWNGRADE_THRESHOLD parameter used in the Leader role.
- *
- * @note This API is reserved for testing and demo purposes only. Changing settings with
- * this API will render a production application non-compliant with the Thread Specification.
- *
- * @param[in]  aInstance   A pointer to an OpenThread instance.
- * @param[in]  aThreshold  The ROUTER_DOWNGRADE_THRESHOLD value.
- *
- * @sa otThreadGetRouterDowngradeThreshold
- */
-void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThreshold);
-
-/**
- * Get the ROUTER_SELECTION_JITTER parameter used in the REED/Router role.
- *
- * @param[in]  aInstance   A pointer to an OpenThread instance.
- *
- * @returns The ROUTER_SELECTION_JITTER value.
- *
- * @sa otThreadSetRouterSelectionJitter
- */
-uint16_t otThreadGetRouterSelectionJitter(otInstance *aInstance);
-
-/**
- * Set the ROUTER_SELECTION_JITTER parameter used in the REED/Router role.
- *
- * @note This API is reserved for testing and demo purposes only. Changing settings with
- * this API will render a production application non-compliant with the Thread Specification.
- *
- * @param[in]  aInstance      A pointer to an OpenThread instance.
- * @param[in]  aRouterJitter  The ROUTER_SELECTION_JITTER value.
- *
- * @sa otThreadGetRouterSelectionJitter
- */
-void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint16_t aRouterJitter);
-
-/**
- * Returns the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
- *
- * @returns The stored Router Downgrade Transition Timing Minimum.
- */
-uint16_t otThreadGetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance);
-
-/**
- * Sets the Router Downgrade Transition Timing Minimum (Router Selection Jitter).
- *
- * @param[in] aTiming The Router Downgrade Transition Timing Minimum to store.
- */
-void otThreadSetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance, uint16_t aTiming);
-
-/**
- * Returns the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
- *
- * @returns The stored Router Downgrade Transition Timing Maximum.
- */
-uint16_t otThreadGetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance);
-
-/**
- * Sets the Router Downgrade Transition Timing Maximum (Router Selection Jitter).
- *
- * @param[in] aTiming The Router Downgrade Transition Timing Maximum to store.
- */
-void otThreadSetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance, uint16_t aTiming);
 
 /**
  * Gets diagnostic information for an attached Child by its Child ID or RLOC16.
@@ -746,33 +711,6 @@ otError otThreadSetPskc(otInstance *aInstance, const otPskc *aPskc);
  * @sa otThreadGetPskcRef
  */
 otError otThreadSetPskcRef(otInstance *aInstance, otPskcRef aKeyRef);
-
-/**
- * Get the assigned parent priority.
- *
- * @param[in]   aInstance   A pointer to an OpenThread instance.
- *
- * @returns The assigned parent priority value, -2 means not assigned.
- *
- * @sa otThreadSetParentPriority
- */
-int8_t otThreadGetParentPriority(otInstance *aInstance);
-
-/**
- * Set the parent priority.
- *
- * @note This API is reserved for testing and demo purposes only. Changing settings with
- * this API will render a production application non-compliant with the Thread Specification.
- *
- * @param[in]  aInstance        A pointer to an OpenThread instance.
- * @param[in]  aParentPriority  The parent priority value.
- *
- * @retval OT_ERROR_NONE           Successfully set the parent priority.
- * @retval OT_ERROR_INVALID_ARGS   If the parent priority value is not among 1, 0, -1 and -2.
- *
- * @sa otThreadGetParentPriority
- */
-otError otThreadSetParentPriority(otInstance *aInstance, int8_t aParentPriority);
 
 /**
  * Gets the maximum number of IP addresses that each MTD child may register with this device as parent.

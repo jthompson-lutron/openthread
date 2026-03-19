@@ -80,6 +80,7 @@ Mle::Mle(Instance &aInstance)
     , mWedAttachTimer(aInstance)
 #endif
 #if OPENTHREAD_FTD
+    , mUseManagedRouterUpgradeReason(false)
     , mRouterEligible(true)
     , mAddressSolicitPending(false)
     , mAddressSolicitRejected(false)
@@ -88,11 +89,12 @@ Mle::Mle(Instance &aInstance)
     , mThreadVersionCheckEnabled(true)
 #endif
     , mNetworkIdTimeout(kNetworkIdTimeout)
-    , mRouterUpgradeThreshold(kRouterUpgradeThreshold)
-    , mRouterDowngradeThreshold(kRouterDowngradeThreshold)
-    , mRouterUpgradeTransitionTimingMaximum(kRouterSelectionJitter)
-    , mRouterDowngradeTransitionDelayMinimum(0)
-    , mRouterDowngradeTransitionDelayMaximum(kRouterSelectionJitter)
+    , mRouterUpgradeThreshold(RouterConfiguration::kRouterUpgradeThresholdDefault)
+    , mRouterDowngradeThreshold(RouterConfiguration::kRouterDowngradeThresholdDefault)
+    , mRouterUpgradeDelayMinimum(RouterConfiguration::kRouterTransitionMinimumDefault)
+    , mRouterUpgradeDelayJitter(RouterConfiguration::kRouterTransitionJitterDefault)
+    , mRouterDowngradeDelayMinimum(RouterConfiguration::kRouterTransitionMinimumDefault)
+    , mRouterDowngradeDelayJitter(RouterConfiguration::kRouterTransitionJitterDefault)
     , mPreviousPartitionRouterIdSequence(0)
     , mPreviousPartitionIdTimeout(0)
     , mChildRouterLinks(kChildRouterLinks)
@@ -100,7 +102,8 @@ Mle::Mle(Instance &aInstance)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     , mMaxChildIpAddresses(0)
 #endif
-    , mParentPriority(kParentPriorityUnspecified)
+    , mParentPriorityThreshold(CapacityThreshold::kParentPriorityThresholdDefault)
+    , mParentDeprioritizationThreshold(CapacityThreshold::kParentDeprioritizationThresholdDefault)
     , mPreviousPartitionIdRouter(0)
     , mPreviousPartitionId(0)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
@@ -394,37 +397,11 @@ void Mle::Restore(void)
     mLastSavedRole = static_cast<DeviceRole>(networkInfo.GetRole());
 
 #if OPENTHREAD_FTD
+    // Note: This block must depends on the initialization of mDeviceMode above
     if (Get<Settings>().Read(routerConfiguration) == kErrorNone)
     {
-        uint8_t  routerConfigurationBitmap = routerConfiguration.GetRouterConfigurationBitmap();
-        int8_t   routerDowngradeThreshold  = routerConfiguration.GetRouterDowngradeThreshold();
-        int8_t   routerUpgradeThreshold    = routerConfiguration.GetRouterUpgradeThreshold();
-        uint16_t upgradeTimingMax          = routerConfiguration.GetRouterUpgradeTransitionTimingMaximum();
-        uint16_t downgradeTimingMin        = routerConfiguration.GetRouterDowngradeTransitionTimingMinimum();
-        uint16_t downgradeTimingMax        = routerConfiguration.GetRouterDowngradeTransitionTimingMaximum();
-
-        // Note: Must be initialized after mDeviceMode
-        IgnoreError(SetRouterEligible((routerConfigurationBitmap & kRouterConfigIneligibleStatusMask) == 0));
-        SetPriorityRouterUpgradeReasonEnabledStatus(
-            (routerConfigurationBitmap & kRouterConfigPriorityUpgradeReasonEnabledMask) != 0);
-        SetPriorityParentEnabledStatus((routerConfigurationBitmap & kRouterConfigPriorityParentEnabledMask) != 0);
-
-        // Use the existing value initialized from a default, if negative
-        SetRouterThresholds((routerUpgradeThreshold >= 0) ? routerUpgradeThreshold : mRouterUpgradeThreshold,
-                            (routerDowngradeThreshold >= 0) ? routerDowngradeThreshold : mRouterDowngradeThreshold);
-
-        if (upgradeTimingMax > 0)
-        {
-            mRouterUpgradeTransitionTimingMaximum = upgradeTimingMax;
-        }
-        if (downgradeTimingMin > 0)
-        {
-            mRouterDowngradeTransitionDelayMinimum = downgradeTimingMin;
-        }
-        if (downgradeTimingMax > 0)
-        {
-            mRouterDowngradeTransitionDelayMaximum = downgradeTimingMax;
-        }
+        // Note: Must be initialized after mDeviceMode above
+        IgnoreError(ApplyRouterRoleConfigurationData(routerConfiguration.GetRouterConfigurationData()));
     }
     // Else, FTDs initialize with non-preferred and router-eligible defaults
 #endif
@@ -503,7 +480,7 @@ void Mle::Store(void)
     Settings::NetworkInfo networkInfo;
 #if OPENTHREAD_FTD
     Settings::RouterConfiguration existingRouterConfiguration;
-    Settings::RouterConfiguration newRouterConfiguration;
+    otRouterConfiguration         newRouterConfigurationData;
 #endif
 
     networkInfo.Init();
@@ -557,54 +534,28 @@ void Mle::Store(void)
     Get<KeyManager>().SetStoredMacFrameCounter(networkInfo.GetMacFrameCounter());
 
 #if OPENTHREAD_FTD
-    newRouterConfiguration.Init();
-    newRouterConfiguration.SetRouterConfigurationBitmap(
-        (IsPriorityRouterUpgradeReasonEnabled() ? kRouterConfigPriorityUpgradeReasonEnabledMask : 0) |
-        (IsRouterEligible() ? 0 : kRouterConfigIneligibleStatusMask) |
-        (IsPriorityParentEnabled() ? kRouterConfigPriorityParentEnabledMask : 0));
-
-    // Values will use default placeholders if effective values match initialized defaults
-    if (GetRouterUpgradeThreshold() != kRouterUpgradeThreshold)
-    {
-        newRouterConfiguration.SetRouterUpgradeThreshold(GetRouterUpgradeThreshold());
-    }
-    if (mRouterDowngradeThreshold != kRouterDowngradeThreshold)
-    {
-        newRouterConfiguration.SetRouterDowngradeThreshold(mRouterDowngradeThreshold);
-    }
-    if (mRouterUpgradeTransitionTimingMaximum != kRouterSelectionJitter)
-    {
-        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterUpgradeTransitionTimingMaximum);
-    }
-    if (mRouterDowngradeTransitionDelayMinimum != 0)
-    {
-        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterDowngradeTransitionDelayMinimum);
-    }
-    if (mRouterDowngradeTransitionDelayMaximum != kRouterSelectionJitter)
-    {
-        newRouterConfiguration.SetRouterUpgradeTransitionTimingMaximum(mRouterDowngradeTransitionDelayMaximum);
-    }
+    newRouterConfigurationData = GetCurrentRouterRoleConfigurationData();
 
     if (Get<Settings>().Read(existingRouterConfiguration) == kErrorNone)
     {
         // Router Configuration settings already exist.  Save new settings only if they have changed.
-        if (existingRouterConfiguration != newRouterConfiguration)
+        if (RouterConfiguration::ConfigurationsDiffer(newRouterConfigurationData, existingRouterConfiguration.GetRouterConfigurationData()))
         {
-            // Delete the new configuration if it matches defaults
-            if (newRouterConfiguration.IsDefault())
+            // Existing settings do not match.  Delete the settings if it fully matches defaults.
+            if (RouterConfiguration::IsDefault(newRouterConfigurationData))
             {
                 Get<Settings>().Delete<SettingsBase::RouterConfiguration>();
             }
             else
             {
-                Get<Settings>().Save(newRouterConfiguration);
+                Get<Settings>().Save(SettingsBase::RouterConfiguration(newRouterConfigurationData));
             }
         }
     }
-    else if (!newRouterConfiguration.IsDefault())
+    else if (!RouterConfiguration::IsDefault(newRouterConfigurationData))
     {
         // Router Configurations settings do not yet exist.  Save only if they are non-default.
-        Get<Settings>().Save(newRouterConfiguration);
+        Get<Settings>().Save(SettingsBase::RouterConfiguration(newRouterConfigurationData));
     }
 #endif
 

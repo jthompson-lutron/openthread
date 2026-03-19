@@ -212,6 +212,126 @@ void Connectivity::IncrementNumForLinkQuality(uint8_t aLinkQuality)
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+// CapacityThreshold
+
+CapacityThreshold::CapacityThreshold(otCapacityThreshold aCapacityThreshold)
+    : mCapacityThreshold(aCapacityThreshold)
+{
+}
+
+bool CapacityThreshold::IsValidValue(otCapacityThreshold aCapacityThreshold)
+{
+    return aCapacityThreshold <= OT_CAPACITY_FULL || aCapacityThreshold == OT_CAPACITY_USED_UNCHANGED ||
+           aCapacityThreshold == OT_CAPACITY_USED_DEFAULT;
+}
+
+otCapacityThreshold CapacityThreshold::GetDefaultCodeOrValue(otCapacityThreshold aDefaultValue) const
+{
+    return (mCapacityThreshold == aDefaultValue) ? OT_CAPACITY_USED_DEFAULT : mCapacityThreshold;
+}
+
+uint16_t CapacityThreshold::GetThresholdOfMaximum(uint16_t aFullMaxCount) const
+{
+    uint16_t threshold = 0;
+    switch (mCapacityThreshold)
+    {
+    case OT_CAPACITY_USED_1_QUARTER:
+        threshold = aFullMaxCount / 4;
+        break;
+    case OT_CAPACITY_USED_1_THIRD:
+        threshold = aFullMaxCount / 3;
+        break;
+    case OT_CAPACITY_USED_1_HALF:
+        threshold = aFullMaxCount / 2;
+        break;
+    case OT_CAPACITY_USED_2_THIRDS:
+        threshold = (aFullMaxCount * 2) / 3;
+        break;
+    case OT_CAPACITY_USED_3_QUARTERS:
+        threshold = (aFullMaxCount * 3) / 4;
+        break;
+    case OT_CAPACITY_FULL:
+        threshold = aFullMaxCount;
+        break;
+    }
+    return threshold;
+}
+
+void CapacityThreshold::SetCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault)
+{
+    if (IsValidValue(aNewCapacity))
+    {
+        mCapacityThreshold =
+            ((aNewCapacity == OT_CAPACITY_USED_DEFAULT) ? aDefault : static_cast<otCapacityThreshold>(aNewCapacity));
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+// RouterConfiguration
+
+#if OPENTHREAD_FTD
+
+bool RouterConfiguration::IsDefault(const otRouterConfiguration &aRouterConfiguration)
+{
+    // Verify values match use-default codes or default values
+    return (
+        aRouterConfiguration.mRouterRoleConfigurationBitmap == 0 &&
+        (aRouterConfiguration.mRouterUpgradeThreshold == kRouterThresholdUseDefault ||
+         aRouterConfiguration.mRouterUpgradeThreshold == kRouterUpgradeThresholdDefault) &&
+        (aRouterConfiguration.mRouterDowngradeThreshold == kRouterThresholdUseDefault ||
+         aRouterConfiguration.mRouterDowngradeThreshold == kRouterDowngradeThresholdDefault) &&
+        (aRouterConfiguration.mParentPriorityThreshold == OT_CAPACITY_USED_DEFAULT ||
+         aRouterConfiguration.mParentPriorityThreshold == CapacityThreshold::kParentPriorityThresholdDefault) &&
+        (aRouterConfiguration.mParentDeprioritizationThreshold == OT_CAPACITY_USED_DEFAULT ||
+         aRouterConfiguration.mParentPriorityThreshold == CapacityThreshold::kParentDeprioritizationThresholdDefault) &&
+        (aRouterConfiguration.mRouterUpgradeDelayMinimum == kRouterTransitionTimingUseDefault ||
+         aRouterConfiguration.mRouterUpgradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+        (aRouterConfiguration.mRouterUpgradeDelayJitter == kRouterTransitionTimingUseDefault ||
+         aRouterConfiguration.mRouterUpgradeDelayJitter == kRouterTransitionJitterDefault) &&
+        (aRouterConfiguration.mRouterDowngradeDelayMinimum == kRouterTransitionTimingUseDefault ||
+         aRouterConfiguration.mRouterDowngradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+        (aRouterConfiguration.mRouterDowngradeDelayJitter == kRouterTransitionTimingUseDefault ||
+         aRouterConfiguration.mRouterDowngradeDelayJitter == kRouterTransitionJitterDefault));
+}
+
+bool RouterConfiguration::ConfigurationsDiffer(const otRouterConfiguration &aRouterConfiguration,
+                                               const otRouterConfiguration &aOther)
+{
+    return (((aRouterConfiguration.mRouterRoleConfigurationBitmap & kRouterRoleConfigMask) ==
+             (aOther.mRouterRoleConfigurationBitmap & kRouterRoleConfigMask)) &&
+            (aRouterConfiguration.mRouterUpgradeThreshold == aOther.mRouterUpgradeThreshold) &&
+            (aRouterConfiguration.mRouterDowngradeThreshold == aOther.mRouterDowngradeThreshold) &&
+            (aRouterConfiguration.mParentPriorityThreshold == aOther.mParentPriorityThreshold) &&
+            (aRouterConfiguration.mParentDeprioritizationThreshold == aOther.mParentDeprioritizationThreshold) &&
+            (aRouterConfiguration.mRouterUpgradeDelayMinimum == aOther.mRouterUpgradeDelayMinimum) &&
+            (aRouterConfiguration.mRouterUpgradeDelayJitter == aOther.mRouterUpgradeDelayJitter) &&
+            (aRouterConfiguration.mRouterDowngradeDelayMinimum == aOther.mRouterDowngradeDelayMinimum) &&
+            (aRouterConfiguration.mRouterDowngradeDelayJitter == aOther.mRouterDowngradeDelayJitter));
+}
+
+void RouterConfiguration::ApplyRouterThreshold(uint8_t &aRouterThresholdReference,
+                                               uint8_t  aNewThreshold,
+                                               uint8_t  aDefaultThreshold)
+{
+    if (aNewThreshold != kRouterThresholdUnchanged)
+    {
+        aRouterThresholdReference = (aNewThreshold == kRouterThresholdUseDefault) ? aDefaultThreshold : aNewThreshold;
+    }
+}
+
+void RouterConfiguration::ApplyTransitionTimingValue(uint16_t &aTransitionTimingReference,
+                                                     uint16_t  aNewTiming,
+                                                     uint16_t  aDefaultTiming)
+{
+    if (aNewTiming != kRouterTransitionTimingUnchanged)
+    {
+        aTransitionTimingReference = (aNewTiming == kRouterTransitionTimingUseDefault) ? aDefaultTiming : aNewTiming;
+    }
+}
+
+#endif // OPENTHREAD_FTD
+
+//---------------------------------------------------------------------------------------------------------------------
 
 const char *RoleToString(DeviceRole aRole)
 {

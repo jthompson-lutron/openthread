@@ -71,26 +71,6 @@ otError otThreadSetRouterEligible(otInstance *aInstance, bool aEligible)
     return AsCoreType(aInstance).Get<Mle::Mle>().SetRouterEligible(aEligible);
 }
 
-bool otThreadIsPriorityRouterUpgradeReasonEnabled(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().IsPriorityRouterUpgradeReasonEnabled();
-}
-
-void otThreadSetPriorityRouterUpgradeReasonEnabledStatus(otInstance *aInstance, bool aEnable)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(aEnable);
-}
-
-bool otThreadIsPriorityParentEnabled(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().IsPriorityParentEnabled();
-}
-
-void otThreadSetPriorityParentEnabledStatus(otInstance *aInstance, bool aEnable)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().SetPriorityParentEnabledStatus(aEnable);
-}
-
 otError otThreadSetPreferredRouterId(otInstance *aInstance, uint8_t aRouterId)
 {
     return AsCoreType(aInstance).Get<Mle::Mle>().SetPreferredRouterId(aRouterId);
@@ -162,14 +142,40 @@ void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout)
     AsCoreType(aInstance).Get<Mle::Mle>().SetNetworkIdTimeout(aTimeout);
 }
 
-uint8_t otThreadGetRouterUpgradeThreshold(otInstance *aInstance)
+otRouterConfiguration otThreadGetCurrentRouterConfiguration(otInstance *aInstance)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterUpgradeThreshold();
+    return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterRoleConfigurationData();
 }
 
-void otThreadSetRouterUpgradeThreshold(otInstance *aInstance, uint8_t aThreshold)
+void otThreadSetSpecifiedRouterConfiguration(otInstance *aInstance, otRouterConfiguration aRouterConfiguration)
 {
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterUpgradeThreshold(aThreshold);
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aRouterConfiguration);
+    // TODO: Implement actual setting in core
+}
+
+otError otThreadGetRouterConfigurationProfile(otInstance                   *aInstance,
+                                              otRouterConfiguration         aRouterConfiguration,
+                                              otRouterConfigurationProfile *aProfile)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aRouterConfiguration);
+
+    Error error = kErrorNone;
+
+    AssertPointerIsNotNull(aProfile);
+
+    // TODO: Implement actual profile matching logic
+    error = kErrorNotFound;
+
+    return error;
+}
+
+void otThreadSetRouterConfigurationProfile(otInstance *aInstance, otRouterConfigurationProfile aProfile)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aProfile);
+    // TODO: Implement actual profile setting in core
 }
 
 uint8_t otThreadGetChildRouterLinks(otInstance *aInstance)
@@ -202,46 +208,6 @@ otError otThreadBecomeRouter(otInstance *aInstance)
 otError otThreadBecomeLeader(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::Mle>().BecomeLeader(Mle::Mle::kCheckLeaderWeight);
-}
-
-uint8_t otThreadGetRouterDowngradeThreshold(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterDowngradeThreshold();
-}
-
-void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThreshold)
-{
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeThreshold(aThreshold);
-}
-
-uint16_t otThreadGetRouterSelectionJitter(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterSelectionJitter();
-}
-
-void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint16_t aRouterJitter)
-{
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterSelectionJitter(aRouterJitter);
-}
-
-uint16_t otThreadGetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterDowngradeTransitionTimingMinimum();
-}
-
-void otThreadSetRouterDowngradeTransitionTimingMinimum(otInstance *aInstance, uint16_t aTiming)
-{
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeTransitionTimingMinimum(aTiming);
-}
-
-uint16_t otThreadGetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterDowngradeTransitionTimingMaximum();
-}
-
-void otThreadSetRouterDowngradeTransitionTimingMaximum(otInstance *aInstance, uint16_t aTiming)
-{
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeTransitionTimingMaximum(aTiming);
 }
 
 otError otThreadGetChildInfoById(otInstance *aInstance, uint16_t aChildId, otChildInfo *aChildInfo)
@@ -344,16 +310,6 @@ exit:
     return error;
 }
 #endif
-
-int8_t otThreadGetParentPriority(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetAssignParentPriority();
-}
-
-otError otThreadSetParentPriority(otInstance *aInstance, int8_t aParentPriority)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().SetAssignParentPriority(aParentPriority);
-}
 
 void otThreadRegisterNeighborTableCallback(otInstance *aInstance, otNeighborTableCallback aCallback)
 {
