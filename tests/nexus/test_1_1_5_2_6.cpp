@@ -60,10 +60,31 @@ static constexpr uint32_t kDowngradeWaitTime = 300 * 1000;
 static constexpr uint32_t kEchoResponseWaitTime = 10000;
 
 /**
- * Router thresholds.
+ * Leader Router Administration configuration with thresholds set to 32, but without the managed option set.
  */
-static constexpr uint8_t kRouterUpgradeThreshold   = 32;
-static constexpr uint8_t kRouterDowngradeThreshold = 32;
+constexpr otRouterAdministrationConfiguration kLeaderAdministration{
+    // The Leader should not require enabling the managed upgrade reason, as routers do
+    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
+
+/**
+ * Router Administration configuration with thresholds set to 32, with the managed option set.
+ */
+constexpr otRouterAdministrationConfiguration kRouterAdministration{
+    // The Routers do require enabling the managed upgrade reason,
+    // as their upgrade threshold will be higher than the default upgrade threshold.
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
 
 /**
  * Number of routers for the test.
@@ -110,15 +131,11 @@ void Test_5_2_6(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
-    leader.Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
-    leader.Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
-    leader.Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
+    leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration);
 
     for (uint16_t i = 0; i < kInitialRouterCount - 2; i++)
     {
-        routers[i]->Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
-        routers[i]->Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
-        routers[i]->Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
+        routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
     }
 
     Log("---------------------------------------------------------------------------------------");
@@ -155,9 +172,7 @@ void Test_5_2_6(void)
      */
     Node &router24 = nexus.CreateNode();
     router24.SetName("ROUTER_24");
-    router24.Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
-    router24.Get<Mle::Mle>().SetRouterUpgradeThreshold(kRouterUpgradeThreshold);
-    router24.Get<Mle::Mle>().SetRouterDowngradeThreshold(kRouterDowngradeThreshold);
+    router24.Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
 
     router24.Join(leader);
     for (uint32_t i = 0; i < kAttachToRouterTime / 1000; i++)

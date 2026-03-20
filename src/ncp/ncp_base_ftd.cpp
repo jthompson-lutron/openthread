@@ -653,60 +653,6 @@ exit:
     return error;
 }
 
-template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD>(void)
-{
-    return mEncoder.WriteUint8(otThreadGetRouterUpgradeThreshold(mInstance));
-}
-
-template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD>(void)
-{
-    uint8_t threshold = 0;
-    otError error     = OT_ERROR_NONE;
-
-    SuccessOrExit(error = mDecoder.ReadUint8(threshold));
-
-    otThreadSetRouterUpgradeThreshold(mInstance, threshold);
-
-exit:
-    return error;
-}
-
-template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD>(void)
-{
-    return mEncoder.WriteUint8(otThreadGetRouterDowngradeThreshold(mInstance));
-}
-
-template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD>(void)
-{
-    uint8_t threshold = 0;
-    otError error     = OT_ERROR_NONE;
-
-    SuccessOrExit(error = mDecoder.ReadUint8(threshold));
-
-    otThreadSetRouterDowngradeThreshold(mInstance, threshold);
-
-exit:
-    return error;
-}
-
-template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER>(void)
-{
-    return mEncoder.WriteUint8(otThreadGetRouterSelectionJitter(mInstance));
-}
-
-template <> otError NcpBase::HandlePropertySet<SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER>(void)
-{
-    uint8_t jitter = 0;
-    otError error  = OT_ERROR_NONE;
-
-    SuccessOrExit(error = mDecoder.ReadUint8(jitter));
-
-    otThreadSetRouterSelectionJitter(mInstance, jitter);
-
-exit:
-    return error;
-}
-
 template <> otError NcpBase::HandlePropertyGet<SPINEL_PROP_THREAD_CONTEXT_REUSE_DELAY>(void)
 {
     return mEncoder.WriteUint32(otThreadGetContextIdReuseDelay(mInstance));

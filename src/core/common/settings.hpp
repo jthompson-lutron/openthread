@@ -106,24 +106,24 @@ public:
      */
     enum Key : uint16_t
     {
-        kKeyActiveDataset       = OT_SETTINGS_KEY_ACTIVE_DATASET,
-        kKeyPendingDataset      = OT_SETTINGS_KEY_PENDING_DATASET,
-        kKeyNetworkInfo         = OT_SETTINGS_KEY_NETWORK_INFO,
-        kKeyParentInfo          = OT_SETTINGS_KEY_PARENT_INFO,
-        kKeyChildInfo           = OT_SETTINGS_KEY_CHILD_INFO,
-        kKeySlaacIidSecretKey   = OT_SETTINGS_KEY_SLAAC_IID_SECRET_KEY,
-        kKeyDadInfo             = OT_SETTINGS_KEY_DAD_INFO,
-        kKeySrpEcdsaKey         = OT_SETTINGS_KEY_SRP_ECDSA_KEY,
-        kKeySrpClientInfo       = OT_SETTINGS_KEY_SRP_CLIENT_INFO,
-        kKeySrpServerInfo       = OT_SETTINGS_KEY_SRP_SERVER_INFO,
-        kKeyBrUlaPrefix         = OT_SETTINGS_KEY_BR_ULA_PREFIX,
-        kKeyBrOnLinkPrefixes    = OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES,
-        kKeyBorderAgentId       = OT_SETTINGS_KEY_BORDER_AGENT_ID,
-        kKeyTcatCommrCert       = OT_SETTINGS_KEY_TCAT_COMMR_CERT,
-        kKeyRouterConfiguration = OT_SETTINGS_KEY_ROUTER_CONFIGURATION,
+        kKeyActiveDataset        = OT_SETTINGS_KEY_ACTIVE_DATASET,
+        kKeyPendingDataset       = OT_SETTINGS_KEY_PENDING_DATASET,
+        kKeyNetworkInfo          = OT_SETTINGS_KEY_NETWORK_INFO,
+        kKeyParentInfo           = OT_SETTINGS_KEY_PARENT_INFO,
+        kKeyChildInfo            = OT_SETTINGS_KEY_CHILD_INFO,
+        kKeySlaacIidSecretKey    = OT_SETTINGS_KEY_SLAAC_IID_SECRET_KEY,
+        kKeyDadInfo              = OT_SETTINGS_KEY_DAD_INFO,
+        kKeySrpEcdsaKey          = OT_SETTINGS_KEY_SRP_ECDSA_KEY,
+        kKeySrpClientInfo        = OT_SETTINGS_KEY_SRP_CLIENT_INFO,
+        kKeySrpServerInfo        = OT_SETTINGS_KEY_SRP_SERVER_INFO,
+        kKeyBrUlaPrefix          = OT_SETTINGS_KEY_BR_ULA_PREFIX,
+        kKeyBrOnLinkPrefixes     = OT_SETTINGS_KEY_BR_ON_LINK_PREFIXES,
+        kKeyBorderAgentId        = OT_SETTINGS_KEY_BORDER_AGENT_ID,
+        kKeyTcatCommrCert        = OT_SETTINGS_KEY_TCAT_COMMR_CERT,
+        kKeyRouterAdministration = OT_SETTINGS_KEY_ROUTER_ADMINISTRATION,
     };
 
-    static constexpr Key kLastKey = kKeyRouterConfiguration; ///< The last (numerically) enumerator value in `Key`.
+    static constexpr Key kLastKey = kKeyRouterAdministration; ///< The last (numerically) enumerator value in `Key`.
 
     static_assert(static_cast<uint16_t>(kLastKey) < static_cast<uint16_t>(OT_SETTINGS_KEY_VENDOR_RESERVED_MIN),
                   "Core settings keys overlap with vendor reserved keys");
@@ -725,20 +725,22 @@ public:
 
 #if OPENTHREAD_FTD
     /**
-     * Represents the router configuration.
+     * Represents the Router Administration settings.
      */
     OT_TOOL_PACKED_BEGIN
-    class RouterConfiguration
+    class RouterAdministration
     {
         friend class Settings;
 
     public:
-        static constexpr Key kKey = kKeyRouterConfiguration; ///< The associated key.
+        static constexpr Key kKey = kKeyRouterAdministration; ///< The associated key.
 
-        RouterConfiguration() = default;
-        RouterConfiguration(const otRouterConfiguration &aOther)
+        void Init(void) {}
+
+        RouterAdministration() = default;
+        RouterAdministration(const otRouterAdministrationConfiguration &aOther)
         {
-            mRouterRoleConfigurationBitmap   = aOther.mRouterRoleConfigurationBitmap;
+            mRouterAdministrationOptions     = aOther.mRouterAdministrationOptions;
             mParentPriorityThreshold         = aOther.mParentPriorityThreshold;
             mParentDeprioritizationThreshold = aOther.mParentDeprioritizationThreshold;
             mRouterUpgradeThreshold          = aOther.mRouterUpgradeThreshold;
@@ -750,16 +752,20 @@ public:
         }
 
         /**
-         * Gets an unpacked copy of the Router Configuration.
+         * Gets an unpacked and reordered copy of the Router Administration Configuration.
          *
-         * @returns The Router Configuration Data.
+         * @returns The unpacked Router Administration Configuration
          */
-        otRouterConfiguration GetRouterConfigurationData(void) const
+        otRouterAdministrationConfiguration GetRouterAdministrationConfiguration(void) const
         {
-            return otRouterConfiguration{
-                mRouterRoleConfigurationBitmap, mParentPriorityThreshold,     mParentDeprioritizationThreshold,
-                mRouterUpgradeThreshold,        mRouterDowngradeThreshold,    mRouterUpgradeDelayMinimum,
-                mRouterUpgradeDelayJitter,      mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter};
+            return otRouterAdministrationConfiguration{
+                mRouterAdministrationOptions,
+                // Upgrade
+                mRouterUpgradeThreshold, mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter,
+                // Downgrade
+                mRouterDowngradeThreshold, mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter,
+                // Parent Priorities
+                mParentPriorityThreshold, mParentDeprioritizationThreshold};
         }
 
     private:
@@ -767,7 +773,9 @@ public:
 
         template <typename T, typename U> inline void copyField(T &dst, const U &src) { dst = static_cast<T>(src); }
 
-        uint8_t             mRouterRoleConfigurationBitmap;
+        // Packed order differs from otRouterAdministrationConfiguration to improve alignment
+
+        uint8_t             mRouterAdministrationOptions;
         otCapacityThreshold mParentPriorityThreshold : 4;
         otCapacityThreshold mParentDeprioritizationThreshold : 4;
         uint8_t             mRouterUpgradeThreshold;

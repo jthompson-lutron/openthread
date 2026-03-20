@@ -2492,11 +2492,6 @@ enum
      */
     SPINEL_PROP_THREAD_RLOC16 = SPINEL_PROP_THREAD_EXT__BEGIN + 1,
 
-    /// Thread Router Upgrade Threshold
-    /** Format: `C`
-     */
-    SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD = SPINEL_PROP_THREAD_EXT__BEGIN + 2,
-
     /// Thread Context Reuse Delay
     /** Format: `L`
      */
@@ -2534,16 +2529,6 @@ enum
      * a re-attach process as an end-device.
      */
     SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED = SPINEL_PROP_THREAD_EXT__BEGIN + 7,
-
-    /// Thread Router Downgrade Threshold
-    /** Format: `C`
-     */
-    SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD = SPINEL_PROP_THREAD_EXT__BEGIN + 8,
-
-    /// Thread Router Selection Jitter
-    /** Format: `C`
-     */
-    SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER = SPINEL_PROP_THREAD_EXT__BEGIN + 9,
 
     /// Thread Preferred Router Id
     /** Format: `C` - Write only

@@ -113,14 +113,14 @@ void SettingsBase::BorderAgentId::Log(Action aAction, const MeshCoP::BorderAgent
 #endif
 
 #if OPENTHREAD_FTD
-void SettingsBase::RouterConfiguration::Log(Action aAction) const
+void SettingsBase::RouterAdministration::Log(Action aAction) const
 {
-    LogInfo("%s RouterConfiguration(0) {configuration:0x%02x, parentpriority+1:%d, parentpriority-1:%d",
-            ActionToString(aAction), mRouterRoleConfigurationBitmap, mParentPriorityThreshold,
+    LogInfo("%s RouterAdministration(0) {configuration:0x%02x, parentpriority+1:%d, parentpriority-1:%d",
+            ActionToString(aAction), mRouterAdministrationOptions, mParentPriorityThreshold,
             mParentDeprioritizationThreshold);
-    LogInfo("%s RouterConfiguration(1) {upgradethreshold:%d, updelaymin:%d, updelayjitter:%d}", ActionToString(aAction),
+    LogInfo("%s RouterAdministration(1) {upthreshold:%d, updelaymin:%d, updelayjitter:%d}", ActionToString(aAction),
             mRouterUpgradeThreshold, mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter);
-    LogInfo("%s RouterConfiguration(2) {downgradethreshold:%d, downdelaymin:%d, downdelayjitter:%d}",
+    LogInfo("%s RouterAdministration(2) {downthreshold:%d, downdelaymin:%d, downdelayjitter:%d}",
             ActionToString(aAction), mRouterDowngradeThreshold, mRouterDowngradeDelayMinimum,
             mRouterDowngradeDelayJitter);
 }
@@ -176,11 +176,11 @@ const char *SettingsBase::KeyToString(Key aKey)
     _(kKeyBrOnLinkPrefixes, "BrOnLinkPrefixes")   \
     _(kKeyBorderAgentId, "BorderAgentId")         \
     _(kKeyTcatCommrCert, "TcatCommrCert")         \
-    _(kKeyRouterConfiguration, "RouterConfiguration")
+    _(kKeyRouterAdministration, "RouterAdministration")
 
     DefineEnumStringArray(KeyMapList);
 
-    static_assert(kLastKey == kKeyRouterConfiguration, "kLastKey is not valid");
+    static_assert(kLastKey == kKeyRouterAdministration, "kLastKey is not valid");
 
     OT_ASSERT(aKey <= kLastKey);
 
@@ -533,8 +533,8 @@ void Settings::Log(Action aAction, Error aError, Key aKey, const void *aValue)
 #endif
 
 #if OPENTHREAD_FTD
-        case kKeyRouterConfiguration:
-            reinterpret_cast<const RouterConfiguration *>(aValue)->Log(aAction);
+        case kKeyRouterAdministration:
+            reinterpret_cast<const RouterAdministration *>(aValue)->Log(aAction);
             break;
 #endif
 

@@ -44,7 +44,10 @@ constexpr bool NcpBase::AreHandlerEntriesSorted(const HandlerEntry *aHandlerEntr
 
 NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
 {
-#define OT_NCP_GET_HANDLER_ENTRY(aPropertyName) {aPropertyName, &NcpBase::HandlePropertyGet<aPropertyName>}
+#define OT_NCP_GET_HANDLER_ENTRY(aPropertyName)                   \
+    {                                                             \
+        aPropertyName, &NcpBase::HandlePropertyGet<aPropertyName> \
+    }
 
     constexpr static HandlerEntry sHandlerEntries[] = {
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_LAST_STATUS),
@@ -283,15 +286,12 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_CHILD_TIMEOUT),
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_RLOC16),
 #if OPENTHREAD_FTD
-        OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD),
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_CONTEXT_REUSE_DELAY),
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_NETWORK_ID_TIMEOUT),
 #endif
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_RLOC16_DEBUG_PASSTHRU),
 #if OPENTHREAD_FTD
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED),
-        OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD),
-        OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER),
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID),
 #endif
         OT_NCP_GET_HANDLER_ENTRY(SPINEL_PROP_THREAD_NEIGHBOR_TABLE),
@@ -411,7 +411,10 @@ NcpBase::PropertyHandler NcpBase::FindGetPropertyHandler(spinel_prop_key_t aKey)
 
 NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
 {
-#define OT_NCP_SET_HANDLER_ENTRY(aPropertyName) {aPropertyName, &NcpBase::HandlePropertySet<aPropertyName>}
+#define OT_NCP_SET_HANDLER_ENTRY(aPropertyName)                   \
+    {                                                             \
+        aPropertyName, &NcpBase::HandlePropertySet<aPropertyName> \
+    }
 
     constexpr static HandlerEntry sHandlerEntries[] = {
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_POWER_STATE),
@@ -601,15 +604,12 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
 #endif
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_CHILD_TIMEOUT),
 #if OPENTHREAD_FTD
-        OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_UPGRADE_THRESHOLD),
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_CONTEXT_REUSE_DELAY),
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_NETWORK_ID_TIMEOUT),
 #endif
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_RLOC16_DEBUG_PASSTHRU),
 #if OPENTHREAD_FTD
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_ROLE_ENABLED),
-        OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_DOWNGRADE_THRESHOLD),
-        OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_ROUTER_SELECTION_JITTER),
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_PREFERRED_ROUTER_ID),
         OT_NCP_SET_HANDLER_ENTRY(SPINEL_PROP_THREAD_CHILD_COUNT_MAX),
 #endif
@@ -723,7 +723,10 @@ NcpBase::PropertyHandler NcpBase::FindSetPropertyHandler(spinel_prop_key_t aKey)
 
 NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aKey)
 {
-#define OT_NCP_INSERT_HANDLER_ENTRY(aPropertyName) {aPropertyName, &NcpBase::HandlePropertyInsert<aPropertyName>}
+#define OT_NCP_INSERT_HANDLER_ENTRY(aPropertyName)                   \
+    {                                                                \
+        aPropertyName, &NcpBase::HandlePropertyInsert<aPropertyName> \
+    }
 
     constexpr static HandlerEntry sHandlerEntries[] = {
 #if OPENTHREAD_CONFIG_PLATFORM_POWER_CALIBRATION_ENABLE
@@ -776,7 +779,10 @@ NcpBase::PropertyHandler NcpBase::FindInsertPropertyHandler(spinel_prop_key_t aK
 
 NcpBase::PropertyHandler NcpBase::FindRemovePropertyHandler(spinel_prop_key_t aKey)
 {
-#define OT_NCP_REMOVE_HANDLER_ENTRY(aPropertyName) {aPropertyName, &NcpBase::HandlePropertyRemove<aPropertyName>}
+#define OT_NCP_REMOVE_HANDLER_ENTRY(aPropertyName)                   \
+    {                                                                \
+        aPropertyName, &NcpBase::HandlePropertyRemove<aPropertyName> \
+    }
 
     constexpr static HandlerEntry sHandlerEntries[] = {
 #if OPENTHREAD_MTD || OPENTHREAD_FTD

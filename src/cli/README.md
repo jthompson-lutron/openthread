@@ -93,7 +93,6 @@ Done
 - [p2p](#p2p-link-extaddr-extaddr)
 - [panid](#panid)
 - [parent](#parent)
-- [parentpriority](#parentpriority)
 - [partitionid](#partitionid)
 - [ping](#ping-async--i-source--m-ipaddr-size-count-interval-hoplimit-timeout)
 - [platform](#platform)
@@ -112,11 +111,8 @@ Done
 - [rloc16](#rloc16)
 - [route](#route)
 - [router](#router-list)
-- [routerconfig](#routerconfig)
-- [routerdowngradethreshold](#routerdowngradethreshold)
+- [routeradmin](#routeradmin)
 - [routereligible](#routereligible)
-- [routerselectionjitter](#routerselectionjitter)
-- [routerupgradethreshold](#routerupgradethreshold)
 - [childrouterlinks](#childrouterlinks)
 - [scan](#scan-channel)
 - [service](#service)
@@ -3414,25 +3410,6 @@ CSL clock accuracy: 20
 CSL uncertainty: 5
 ```
 
-### parentpriority
-
-Get the assigned parent priority value, -2 means not assigned.
-
-```bash
-> parentpriority
-1
-Done
-```
-
-### parentpriority \<parentpriority\>
-
-Set the assigned parent priority value: 1, 0, -1 or -2.
-
-```bash
-> parentpriority 1
-Done
-```
-
 ### partitionid
 
 Get the Thread Network Partition ID.
@@ -3924,47 +3901,47 @@ Age: 7
 Done
 ```
 
-### routerconfig
+### routeradmin
 
-Gets the router priority, threshold, and transition time parameters.
+Get the Router Administration Configuration details.
 
 ```bash
-> routerconfig
-upgrade priority: 0
-parent priority: 0
-upgrade threshold: 16
-downgrade threshold: 23
-upgrade transition time max: 120
-downgrade transition time min: 0
-downgrade transition time max: 120
+> routeradmin
+routeradmin
+routeradmin profile: Default
+routeradmin options:0, parentpriority+1:15, parentpriority-1:15
+routeradmin upthreshold:255, updelaymin:65535, updelayjitter:65535
 Done
 ```
 
-### routerconfig \<upgrade_priority\> \<parent_priority\> \<upgrade_threshold\> \<downgrade_threshold\> \<upgrade_time_max\> \<downgrade_time_min\> \<downgrade_time_max\>
+### routeradmin \<profile_name\>
 
-Sets the router priority, threshold, and transition time parameters.
+Apply the Router Administration by profile name.
 
 ```bash
-> routerconfig 1 1 16 23 120 0 120
+> routeradmin Default
+Done
+> routeradmin Preferred
+Done
+> routeradmin Reluctant
+Done
+> routeradmin Ineligible
 Done
 ```
 
-### routerdowngradethreshold
 
-Get the ROUTER_DOWNGRADE_THRESHOLD value.
+### routeradmin \<options\> \<parent_priority\> \<parent_deprioritization\> \<upgrade_threshold\> \<upgrade_delay_min\> \<upgrade_delay_jitter\> \<downgrade_threshold\> \<downgrade_delay_min\> \<downgrade_delay_jitter\>
+
+Apply the Router Administration by profile name.
 
 ```bash
-> routerdowngradethreshold
-23
+> routeradmin 0 15 15 255 65535 65535 255 65535 65535
 Done
-```
-
-### routerdowngradethreshold \<threshold\>
-
-Set the ROUTER_DOWNGRADE_THRESHOLD value.
-
-```bash
-> routerdowngradethreshold 23
+> routeradmin 1 3 4 25 0 30 30 300 300
+Done
+> routeradmin 1 0 2 0 60 120 17 0 60
+Done
+> routeradmin 2 14 14 254 65534 65534 254 65534 65534
 Done
 ```
 
@@ -3993,44 +3970,6 @@ Disable the router role.
 
 ```bash
 > routereligible disable
-Done
-```
-
-### routerselectionjitter
-
-Get the ROUTER_SELECTION_JITTER value.
-
-```bash
-> routerselectionjitter
-120
-Done
-```
-
-### routerselectionjitter \<jitter\>
-
-Set the ROUTER_SELECTION_JITTER value.
-
-```bash
-> routerselectionjitter 120
-Done
-```
-
-### routerupgradethreshold
-
-Get the ROUTER_UPGRADE_THRESHOLD value.
-
-```bash
-> routerupgradethreshold
-16
-Done
-```
-
-### routerupgradethreshold \<threshold\>
-
-Set the ROUTER_UPGRADE_THRESHOLD value.
-
-```bash
-> routerupgradethreshold 16
 Done
 ```
 

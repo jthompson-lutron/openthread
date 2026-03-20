@@ -377,106 +377,130 @@ uint8_t otThreadGetNetworkIdTimeout(otInstance *aInstance);
  */
 void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout);
 
-static constexpr uint8_t kRouterRoleConfigManagedStatusEnabledMask = 0x01; ///< Use Managed Upgrade Reason bitmask
-static constexpr uint8_t kRouterRoleConfigIneligibleStatusMask     = 0x02; ///< Ineligible Status bitmask
+/** Use Managed Upgrade Reason bitmask (default 0 = unmanaged) */
+#define OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK (0x01)
+/** Router Ineligibility bitmask (default 0 = eligible) */
+#define OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK (0x02)
+
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT (0)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED (OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE (OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
 
 /**
  * Enumerated thresholds for parent priority thresholds based on capacity utilization.
  */
 typedef enum
 {
-    OT_CAPACITY_USED_NONE       = 0,
-    OT_CAPACITY_USED_1_QUARTER  = 1,
-    OT_CAPACITY_USED_1_THIRD    = 2,
-    OT_CAPACITY_USED_1_HALF     = 3,
-    OT_CAPACITY_USED_2_THIRDS   = 4,
-    OT_CAPACITY_USED_3_QUARTERS = 5,
-    OT_CAPACITY_FULL            = 6,
-    OT_CAPACITY_USED_UNCHANGED  = 0xE,
-    OT_CAPACITY_USED_DEFAULT    = 0xF
+    OT_CAPACITY_USED_NONE           = 0,
+    OT_CAPACITY_USED_ONE_QUARTER    = 1,
+    OT_CAPACITY_USED_ONE_THIRD      = 2,
+    OT_CAPACITY_USED_ONE_HALF       = 3,
+    OT_CAPACITY_USED_TWO_THIRDS     = 4,
+    OT_CAPACITY_USED_THREE_QUARTERS = 5,
+    OT_CAPACITY_FULL                = 6,
+    OT_CAPACITY_USED_UNCHANGED      = 0xE, ///< Specifies no change to the capacity threshold when applied
+    OT_CAPACITY_USED_DEFAULT        = 0xF  ///< Applies the default value for the corresponding capacity threshold
 } otCapacityThreshold;
 
+#define OT_ROUTER_THRESHOLD_MAXIMUM ((uint8_t)32)
+#define OT_ROUTER_THRESHOLD_UNCHANGED_CODE ((uint8_t)0xFEu)
+#define OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ((uint8_t)0xFFu)
+
+#define OT_ROUTER_TRANSITION_DELAY_MINIMUM_MAX_ALLOWED ((uint16_t)600)
+#define OT_ROUTER_TRANSITION_DELAY_JITTER_MAX_ALLOWED ((uint16_t)1200)
+#define OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE ((uint16_t)0xFFFEu)
+#define OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ((uint16_t)0xFFFFu)
+
 /**
- * Parameters controlling the Router Configuration and priority.
+ * Router Administration Configuration.
  */
 typedef struct
 {
-    uint8_t mRouterRoleConfigurationBitmap; ///< Flags for enabling/disabling configurations, including reserved bits
+    uint8_t mRouterAdministrationOptions; ///< Flags for enabling/disabling options, including reserved bits
 
+    // Upgrade
+    /** The number of active routers below which upgrades will be attempted.  (0-32, unchanged, or default) */
+    uint8_t mRouterUpgradeThreshold;
+    /** The minimum delay before an upgrade in seconds.  (0-600, unchanged, or default) */
+    uint16_t mRouterUpgradeDelayMinimum;
+    /** The additional randomized time in seconds before an upgrade in seconds.  (0-1200, unchanged, or default) */
+    uint16_t mRouterUpgradeDelayJitter;
+
+    // Downgrade
+    /** The number of active routers below which downgrades will be attempted.  (0-32, unchanged, or default) */
+    uint8_t mRouterDowngradeThreshold;
+    /** The minimum delay before an downgrade in seconds.  (0-600, unchanged, or default) */
+    uint16_t mRouterDowngradeDelayMinimum;
+    /** The additional randomized time in seconds before a downgrade in seconds.  (0-1200, unchanged, or default) */
+    uint16_t mRouterDowngradeDelayJitter;
+
+    // Parent Priorities
     /** The Valid Child capacity threshold for using Parent Priority 1 */
     otCapacityThreshold mParentPriorityThreshold : 4;
     /** The capacity threshold for using Parent Priority -1 */
     otCapacityThreshold mParentDeprioritizationThreshold : 4;
-
-    uint8_t mRouterUpgradeThreshold;   ///< The number of active routers below which upgrades will be attempted
-    uint8_t mRouterDowngradeThreshold; ///< The number of active routers above which downgrades will be performed
-
-    uint16_t mRouterUpgradeDelayMinimum;   ///< The fixed delay before an upgrade in seconds
-    uint16_t mRouterUpgradeDelayJitter;    ///< The additional randomized time in seconds before an upgrade
-    uint16_t mRouterDowngradeDelayMinimum; ///< The fixed delay before a downgrade in seconds
-    uint16_t mRouterDowngradeDelayJitter;  ///< The additional randomized time in seconds before a downgrade
-} otRouterConfiguration;
+} otRouterAdministrationConfiguration;
 
 /**
- * Get the current Router Configuration.
+ * Get the current Router Administration Configuration.
  *
  * @param[in]  aInstance A pointer to an OpenThread instance.
  *
- * @returns The current Router Configuration.
+ * @returns The current Router Administration Configuration.
  *
- * @sa otThreadGetRouterConfigurationProfile
- * @sa otThreadSetSpecifiedRouterConfiguration
- * @sa otThreadSetRouterConfigurationProfile
+ * @sa otThreadGetRouterAdministrationProfile
+ * @sa otThreadApplySpecifiedRouterAdministration
+ * @sa otThreadApplyRouterAdministrationProfile
  */
-otRouterConfiguration otThreadGetCurrentRouterConfiguration(otInstance *aInstance);
+otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otInstance *aInstance);
 
 /**
- * Set the Router Configuration to specified parameters.
+ * Set the Router Administration to a specified configuration.
  *
  * @param[in]  aInstance            A pointer to an OpenThread instance.
- * @param[in]  aRouterConfiguration The current Router Configuration.
+ * @param[in]  aConfiguration The specified Router Administration Configuration.
  *
- * @sa otThreadGetCurrentRouterConfiguration
+ * @sa otThreadGetCurrentRouterAdministration
  */
-void otThreadSetSpecifiedRouterConfiguration(otInstance *aInstance, otRouterConfiguration aRouterConfiguration);
+void otThreadApplySpecifiedRouterAdministration(otInstance                         *aInstance,
+                                                otRouterAdministrationConfiguration aConfiguration);
 
 /**
- * Specified Router Configuration profiles.
+ * Specified Router Administration profiles.
  */
 typedef enum
 {
-    OT_ROUTER_CONFIGURATION_DEFAULT,    ///< The default router configuration for FTDs
-    OT_ROUTER_CONFIGURATION_PREFERRED,  ///< Preferred attempts to transition to router status and have parent priority
-    OT_ROUTER_CONFIGURATION_RELUCTANT,  ///< Deprioritized but capable of router status
-    OT_ROUTER_CONFIGURATION_INELIGIBLE, ///< Ineligible to become or continue function as a router
-} otRouterConfigurationProfile;
+    OT_ROUTER_ADMINISTRATION_DEFAULT    = 0, ///< The profile matching the default configuration
+    OT_ROUTER_ADMINISTRATION_PREFERRED  = 1, ///< Preferred attempts to upgrade, with parent priority
+    OT_ROUTER_ADMINISTRATION_RELUCTANT  = 2, ///< Upgrades only if a child has no other parent options
+    OT_ROUTER_ADMINISTRATION_INELIGIBLE = 3, ///< Ineligible to become or continue function as a router
+} otRouterAdministrationProfile;
 
 /**
- * Get the profile of the given Router Configuration.
+ * Get the profile of the given Router Administration Configuration.
  *
- * @param[in]  aInstance            A pointer to an OpenThread instance.
- * @param[in]  aRouterConfiguration A current Router Configuration.
- * @param[out] aProfile             A current Router Configuration.
+ * @param[in]  aInstance      A pointer to an OpenThread instance.
+ * @param[in]  aConfiguration A current Router Administration Configuration.
+ * @param[out] aProfile       A Router Administration profile.
  *
  * @retval OT_ERROR_NONE      Successfully released the router id.
- * @retval OT_ERROR_NOT_FOUND The router configuration doesn't match a known profile.
+ * @retval OT_ERROR_NOT_FOUND The configuration doesn't match a known profile.
  *
- * @sa otThreadGetCurrentRouterConfiguration
- * @sa otThreadSetRouterConfigurationProfile
+ * @sa otThreadGetCurrentRouterAdministration
+ * @sa otThreadApplyRouterAdministrationProfile
  */
-otError otThreadGetRouterConfigurationProfile(otInstance                   *aInstance,
-                                              otRouterConfiguration         aRouterConfiguration,
-                                              otRouterConfigurationProfile *aProfile);
+otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aConfiguration,
+                                               otRouterAdministrationProfile             &aProfile);
 
 /**
- * Set the Router Configuration to the specified profile.
+ * Set the Router Administration Configuration to the specified profile.
  *
  * @param[in]  aInstance A pointer to an OpenThread instance.
- * @param[in]  aProfile  The specified Router Configuration profile.
+ * @param[in]  aProfile  The specified Router Administration Configuration profile.
  *
- * @sa otThreadGetCurrentRouterConfiguration
+ * @sa otThreadGetCurrentRouterAdministration
  */
-void otThreadSetRouterConfigurationProfile(otInstance *aInstance, otRouterConfigurationProfile aProfile);
+void otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile);
 
 /**
  * Get the MLE_CHILD_ROUTER_LINKS parameter used in the REED role.

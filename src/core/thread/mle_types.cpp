@@ -214,6 +214,7 @@ void Connectivity::IncrementNumForLinkQuality(uint8_t aLinkQuality)
 //---------------------------------------------------------------------------------------------------------------------
 // CapacityThreshold
 
+#if OPENTHREAD_FTD
 CapacityThreshold::CapacityThreshold(otCapacityThreshold aCapacityThreshold)
     : mCapacityThreshold(aCapacityThreshold)
 {
@@ -235,99 +236,124 @@ uint16_t CapacityThreshold::GetThresholdOfMaximum(uint16_t aFullMaxCount) const
     uint16_t threshold = 0;
     switch (mCapacityThreshold)
     {
-    case OT_CAPACITY_USED_1_QUARTER:
+    case OT_CAPACITY_USED_ONE_QUARTER:
         threshold = aFullMaxCount / 4;
         break;
-    case OT_CAPACITY_USED_1_THIRD:
+    case OT_CAPACITY_USED_ONE_THIRD:
         threshold = aFullMaxCount / 3;
         break;
-    case OT_CAPACITY_USED_1_HALF:
+    case OT_CAPACITY_USED_ONE_HALF:
         threshold = aFullMaxCount / 2;
         break;
-    case OT_CAPACITY_USED_2_THIRDS:
+    case OT_CAPACITY_USED_TWO_THIRDS:
         threshold = (aFullMaxCount * 2) / 3;
         break;
-    case OT_CAPACITY_USED_3_QUARTERS:
+    case OT_CAPACITY_USED_THREE_QUARTERS:
         threshold = (aFullMaxCount * 3) / 4;
         break;
     case OT_CAPACITY_FULL:
         threshold = aFullMaxCount;
         break;
+    default:
+        break;
     }
     return threshold;
 }
 
-void CapacityThreshold::SetCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault)
+void CapacityThreshold::ApplyCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault)
 {
     if (IsValidValue(aNewCapacity))
     {
-        mCapacityThreshold =
-            ((aNewCapacity == OT_CAPACITY_USED_DEFAULT) ? aDefault : static_cast<otCapacityThreshold>(aNewCapacity));
+        mCapacityThreshold = ((aNewCapacity == OT_CAPACITY_USED_DEFAULT) ? aDefault : aNewCapacity);
     }
 }
 
+#endif
+
 //---------------------------------------------------------------------------------------------------------------------
-// RouterConfiguration
+// RouterAdministration
 
 #if OPENTHREAD_FTD
 
-bool RouterConfiguration::IsDefault(const otRouterConfiguration &aRouterConfiguration)
+namespace RouterAdministration {
+
+bool IsDefault(const otRouterAdministrationConfiguration &aRouterAdministration)
 {
     // Verify values match use-default codes or default values
-    return (
-        aRouterConfiguration.mRouterRoleConfigurationBitmap == 0 &&
-        (aRouterConfiguration.mRouterUpgradeThreshold == kRouterThresholdUseDefault ||
-         aRouterConfiguration.mRouterUpgradeThreshold == kRouterUpgradeThresholdDefault) &&
-        (aRouterConfiguration.mRouterDowngradeThreshold == kRouterThresholdUseDefault ||
-         aRouterConfiguration.mRouterDowngradeThreshold == kRouterDowngradeThresholdDefault) &&
-        (aRouterConfiguration.mParentPriorityThreshold == OT_CAPACITY_USED_DEFAULT ||
-         aRouterConfiguration.mParentPriorityThreshold == CapacityThreshold::kParentPriorityThresholdDefault) &&
-        (aRouterConfiguration.mParentDeprioritizationThreshold == OT_CAPACITY_USED_DEFAULT ||
-         aRouterConfiguration.mParentPriorityThreshold == CapacityThreshold::kParentDeprioritizationThresholdDefault) &&
-        (aRouterConfiguration.mRouterUpgradeDelayMinimum == kRouterTransitionTimingUseDefault ||
-         aRouterConfiguration.mRouterUpgradeDelayMinimum == kRouterTransitionMinimumDefault) &&
-        (aRouterConfiguration.mRouterUpgradeDelayJitter == kRouterTransitionTimingUseDefault ||
-         aRouterConfiguration.mRouterUpgradeDelayJitter == kRouterTransitionJitterDefault) &&
-        (aRouterConfiguration.mRouterDowngradeDelayMinimum == kRouterTransitionTimingUseDefault ||
-         aRouterConfiguration.mRouterDowngradeDelayMinimum == kRouterTransitionMinimumDefault) &&
-        (aRouterConfiguration.mRouterDowngradeDelayJitter == kRouterTransitionTimingUseDefault ||
-         aRouterConfiguration.mRouterDowngradeDelayJitter == kRouterTransitionJitterDefault));
+    // The mRouterAdministrationOptions verifies that reserved bits are also in their default state
+    return (aRouterAdministration.mRouterAdministrationOptions == 0 &&
+            (aRouterAdministration.mRouterUpgradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterUpgradeThreshold == kRouterUpgradeThresholdDefault) &&
+            (aRouterAdministration.mRouterDowngradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterDowngradeThreshold == kRouterDowngradeThresholdDefault) &&
+            (aRouterAdministration.mParentPriorityThreshold == OT_CAPACITY_USED_DEFAULT ||
+             aRouterAdministration.mParentPriorityThreshold == CapacityThreshold::kParentPriorityThresholdDefault) &&
+            (aRouterAdministration.mParentDeprioritizationThreshold == OT_CAPACITY_USED_DEFAULT ||
+             aRouterAdministration.mParentPriorityThreshold ==
+                 CapacityThreshold::kParentDeprioritizationThresholdDefault) &&
+            (aRouterAdministration.mRouterUpgradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterUpgradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+            (aRouterAdministration.mRouterUpgradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterUpgradeDelayJitter == kRouterTransitionJitterDefault) &&
+            (aRouterAdministration.mRouterDowngradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterDowngradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+            (aRouterAdministration.mRouterDowngradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aRouterAdministration.mRouterDowngradeDelayJitter == kRouterTransitionJitterDefault));
 }
 
-bool RouterConfiguration::ConfigurationsDiffer(const otRouterConfiguration &aRouterConfiguration,
-                                               const otRouterConfiguration &aOther)
+bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aRouterAdministration,
+                          const otRouterAdministrationConfiguration &aOther)
 {
-    return (((aRouterConfiguration.mRouterRoleConfigurationBitmap & kRouterRoleConfigMask) ==
-             (aOther.mRouterRoleConfigurationBitmap & kRouterRoleConfigMask)) &&
-            (aRouterConfiguration.mRouterUpgradeThreshold == aOther.mRouterUpgradeThreshold) &&
-            (aRouterConfiguration.mRouterDowngradeThreshold == aOther.mRouterDowngradeThreshold) &&
-            (aRouterConfiguration.mParentPriorityThreshold == aOther.mParentPriorityThreshold) &&
-            (aRouterConfiguration.mParentDeprioritizationThreshold == aOther.mParentDeprioritizationThreshold) &&
-            (aRouterConfiguration.mRouterUpgradeDelayMinimum == aOther.mRouterUpgradeDelayMinimum) &&
-            (aRouterConfiguration.mRouterUpgradeDelayJitter == aOther.mRouterUpgradeDelayJitter) &&
-            (aRouterConfiguration.mRouterDowngradeDelayMinimum == aOther.mRouterDowngradeDelayMinimum) &&
-            (aRouterConfiguration.mRouterDowngradeDelayJitter == aOther.mRouterDowngradeDelayJitter));
+    // mRouterAdministrationOptions ignores differences in reserved bits,
+    // so that existing settings will not be overwritten if all other parameters match.
+    return (((aRouterAdministration.mRouterAdministrationOptions & kRouterRoleConfigMask) ==
+             (aOther.mRouterAdministrationOptions & kRouterRoleConfigMask)) &&
+            (aRouterAdministration.mRouterUpgradeThreshold == aOther.mRouterUpgradeThreshold) &&
+            (aRouterAdministration.mRouterDowngradeThreshold == aOther.mRouterDowngradeThreshold) &&
+            (aRouterAdministration.mParentPriorityThreshold == aOther.mParentPriorityThreshold) &&
+            (aRouterAdministration.mParentDeprioritizationThreshold == aOther.mParentDeprioritizationThreshold) &&
+            (aRouterAdministration.mRouterUpgradeDelayMinimum == aOther.mRouterUpgradeDelayMinimum) &&
+            (aRouterAdministration.mRouterUpgradeDelayJitter == aOther.mRouterUpgradeDelayJitter) &&
+            (aRouterAdministration.mRouterDowngradeDelayMinimum == aOther.mRouterDowngradeDelayMinimum) &&
+            (aRouterAdministration.mRouterDowngradeDelayJitter == aOther.mRouterDowngradeDelayJitter));
 }
 
-void RouterConfiguration::ApplyRouterThreshold(uint8_t &aRouterThresholdReference,
-                                               uint8_t  aNewThreshold,
-                                               uint8_t  aDefaultThreshold)
+template <typename T, T aUnchangedCode, T aDefaultCode>
+static inline void ApplyCodeOrValue(T &aParameterReference, T aValueToApply, T aDefaultValue)
 {
-    if (aNewThreshold != kRouterThresholdUnchanged)
+    if (aValueToApply != aUnchangedCode)
     {
-        aRouterThresholdReference = (aNewThreshold == kRouterThresholdUseDefault) ? aDefaultThreshold : aNewThreshold;
+        aParameterReference = (aValueToApply == aDefaultCode) ? aDefaultValue : aValueToApply;
     }
 }
-
-void RouterConfiguration::ApplyTransitionTimingValue(uint16_t &aTransitionTimingReference,
-                                                     uint16_t  aNewTiming,
-                                                     uint16_t  aDefaultTiming)
+template <typename T, T aUnchangedCode, T aDefaultCode> static inline bool IsValid(T aValue, T aMaxValue)
 {
-    if (aNewTiming != kRouterTransitionTimingUnchanged)
-    {
-        aTransitionTimingReference = (aNewTiming == kRouterTransitionTimingUseDefault) ? aDefaultTiming : aNewTiming;
-    }
+    return (aValue <= aMaxValue || aValue == aUnchangedCode || aValue == aDefaultCode);
 }
+
+bool IsValidThreshold(uint8_t aRouterThreshold)
+{
+    return IsValid<uint8_t, OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE>(
+        aRouterThreshold, OT_ROUTER_THRESHOLD_MAXIMUM);
+}
+bool IsValidTransitionDelay(uint16_t aTransitionDelay, uint16_t aMaxValue)
+{
+    return IsValid<uint16_t, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE>(
+        aTransitionDelay, aMaxValue);
+}
+
+void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold)
+{
+    ApplyCodeOrValue<uint8_t, OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE>(
+        aRouterThresholdReference, aNewThreshold, aDefaultThreshold);
+}
+void ApplyTransitionDelayValue(uint16_t &aTransitionDelayReference, uint16_t aNewDelay, uint16_t aDefaultDelay)
+{
+    ApplyCodeOrValue<uint16_t, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE>(
+        aTransitionDelayReference, aNewDelay, aDefaultDelay);
+}
+
+} // namespace RouterAdministration
 
 #endif // OPENTHREAD_FTD
 

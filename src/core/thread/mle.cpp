@@ -89,12 +89,12 @@ Mle::Mle(Instance &aInstance)
     , mThreadVersionCheckEnabled(true)
 #endif
     , mNetworkIdTimeout(kNetworkIdTimeout)
-    , mRouterUpgradeThreshold(RouterConfiguration::kRouterUpgradeThresholdDefault)
-    , mRouterDowngradeThreshold(RouterConfiguration::kRouterDowngradeThresholdDefault)
-    , mRouterUpgradeDelayMinimum(RouterConfiguration::kRouterTransitionMinimumDefault)
-    , mRouterUpgradeDelayJitter(RouterConfiguration::kRouterTransitionJitterDefault)
-    , mRouterDowngradeDelayMinimum(RouterConfiguration::kRouterTransitionMinimumDefault)
-    , mRouterDowngradeDelayJitter(RouterConfiguration::kRouterTransitionJitterDefault)
+    , mRouterUpgradeThreshold(RouterAdministration::kRouterUpgradeThresholdDefault)
+    , mRouterDowngradeThreshold(RouterAdministration::kRouterDowngradeThresholdDefault)
+    , mRouterUpgradeDelayMinimum(RouterAdministration::kRouterTransitionMinimumDefault)
+    , mRouterUpgradeDelayJitter(RouterAdministration::kRouterTransitionJitterDefault)
+    , mRouterDowngradeDelayMinimum(RouterAdministration::kRouterTransitionMinimumDefault)
+    , mRouterDowngradeDelayJitter(RouterAdministration::kRouterTransitionJitterDefault)
     , mPreviousPartitionRouterIdSequence(0)
     , mPreviousPartitionIdTimeout(0)
     , mChildRouterLinks(kChildRouterLinks)
@@ -368,7 +368,7 @@ void Mle::Restore(void)
     Settings::NetworkInfo networkInfo;
     Settings::ParentInfo  parentInfo;
 #if OPENTHREAD_FTD
-    Settings::RouterConfiguration routerConfiguration;
+    Settings::RouterAdministration routerAdministration;
 #endif
 
     IgnoreError(Get<MeshCoP::ActiveDatasetManager>().Restore());
@@ -398,10 +398,10 @@ void Mle::Restore(void)
 
 #if OPENTHREAD_FTD
     // Note: This block must depends on the initialization of mDeviceMode above
-    if (Get<Settings>().Read(routerConfiguration) == kErrorNone)
+    if (Get<Settings>().Read(routerAdministration) == kErrorNone)
     {
         // Note: Must be initialized after mDeviceMode above
-        IgnoreError(ApplyRouterRoleConfigurationData(routerConfiguration.GetRouterConfigurationData()));
+        IgnoreError(ApplyRouterAdministration(routerAdministration.GetRouterAdministrationConfiguration()));
     }
     // Else, FTDs initialize with non-preferred and router-eligible defaults
 #endif
@@ -479,8 +479,8 @@ void Mle::Store(void)
 {
     Settings::NetworkInfo networkInfo;
 #if OPENTHREAD_FTD
-    Settings::RouterConfiguration existingRouterConfiguration;
-    otRouterConfiguration         newRouterConfigurationData;
+    Settings::RouterAdministration      existingRouterAdministration;
+    otRouterAdministrationConfiguration newRouterAdministration;
 #endif
 
     networkInfo.Init();
@@ -534,28 +534,29 @@ void Mle::Store(void)
     Get<KeyManager>().SetStoredMacFrameCounter(networkInfo.GetMacFrameCounter());
 
 #if OPENTHREAD_FTD
-    newRouterConfigurationData = GetCurrentRouterRoleConfigurationData();
+    newRouterAdministration = GetCurrentRouterAdministration();
 
-    if (Get<Settings>().Read(existingRouterConfiguration) == kErrorNone)
+    if (Get<Settings>().Read(existingRouterAdministration) == kErrorNone)
     {
-        // Router Configuration settings already exist.  Save new settings only if they have changed.
-        if (RouterConfiguration::ConfigurationsDiffer(newRouterConfigurationData, existingRouterConfiguration.GetRouterConfigurationData()))
+        // RouterAdministration settings already exist.  Save new settings only if they have changed.
+        if (RouterAdministration::ConfigurationsDiffer(
+                newRouterAdministration, existingRouterAdministration.GetRouterAdministrationConfiguration()))
         {
             // Existing settings do not match.  Delete the settings if it fully matches defaults.
-            if (RouterConfiguration::IsDefault(newRouterConfigurationData))
+            if (RouterAdministration::IsDefault(newRouterAdministration))
             {
-                Get<Settings>().Delete<SettingsBase::RouterConfiguration>();
+                Get<Settings>().Delete<SettingsBase::RouterAdministration>();
             }
             else
             {
-                Get<Settings>().Save(SettingsBase::RouterConfiguration(newRouterConfigurationData));
+                Get<Settings>().Save(SettingsBase::RouterAdministration(newRouterAdministration));
             }
         }
     }
-    else if (!RouterConfiguration::IsDefault(newRouterConfigurationData))
+    else if (!RouterAdministration::IsDefault(newRouterAdministration))
     {
-        // Router Configurations settings do not yet exist.  Save only if they are non-default.
-        Get<Settings>().Save(SettingsBase::RouterConfiguration(newRouterConfigurationData));
+        // RouterAdministration settings do not yet exist.  Save only if they are non-default.
+        Get<Settings>().Save(SettingsBase::RouterAdministration(newRouterAdministration));
     }
 #endif
 

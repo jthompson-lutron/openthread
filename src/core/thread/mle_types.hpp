@@ -852,13 +852,13 @@ public:
 
     otCapacityThreshold GetDefaultCodeOrValue(otCapacityThreshold aDefaultValue) const;
     uint16_t            GetThresholdOfMaximum(uint16_t aFullMaxCount) const;
-    void                SetCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault);
+    void                ApplyCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault);
 
     // -------------------------------------------------------------------------------------------
     // Valid values specifying whether values should remain unchanged or use defaults when applied
 
-    static constexpr uint8_t kCapacityUnchanged  = OT_CAPACITY_USED_UNCHANGED;
-    static constexpr uint8_t kCapacityUseDefault = OT_CAPACITY_USED_DEFAULT;
+    static constexpr uint8_t kCapacityUnchangedCode  = OT_CAPACITY_USED_UNCHANGED;
+    static constexpr uint8_t kCapacityUseDefaultCode = OT_CAPACITY_USED_DEFAULT;
 
     // --------
     // Defaults
@@ -866,29 +866,19 @@ public:
     // +1 Priority disabled by default (<0 full).
     static constexpr otCapacityThreshold kParentPriorityThresholdDefault = OT_CAPACITY_USED_NONE;
     // -1 Priority at > 2/3 full by default
-    static constexpr otCapacityThreshold kParentDeprioritizationThresholdDefault = OT_CAPACITY_USED_2_THIRDS;
+    static constexpr otCapacityThreshold kParentDeprioritizationThresholdDefault = OT_CAPACITY_USED_TWO_THIRDS;
 
 private:
     otCapacityThreshold mCapacityThreshold;
 };
 
 /**
- * Configuration data used to store or restore the Router Configuration.
+ * Additional definitions and operations for Router Administration.
  */
-namespace RouterConfiguration {
+namespace RouterAdministration {
 
-constexpr uint8_t kRouterRoleConfigManagedStatusEnabledMask = 0x01; ///< Use Managed Upgrade Reason bitmask
-constexpr uint8_t kRouterRoleConfigIneligibleStatusMask     = 0x02; ///< Ineligible Status bitmask
 constexpr uint8_t kRouterRoleConfigMask =
-    kRouterRoleConfigManagedStatusEnabledMask | kRouterRoleConfigIneligibleStatusMask;
-
-// -------------------------------------------------------------------------------------------
-// Valid values specifying whether values should remain unchanged or use defaults when applied
-
-constexpr uint8_t  kRouterThresholdUnchanged         = 0xFE;
-constexpr uint8_t  kRouterThresholdUseDefault        = 0xFF;
-constexpr uint16_t kRouterTransitionTimingUnchanged  = 0xFFFE;
-constexpr uint16_t kRouterTransitionTimingUseDefault = 0xFFFF;
+    OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK | OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK;
 
 // --------------
 // Default values
@@ -911,31 +901,35 @@ constexpr uint16_t kRouterTransitionJitterDefault  = 120; ///< (in sec) Default 
  * @retval TRUE if all values would become defaults when applied.
  * @retval FALSE if any value does not apply a default.
  */
-bool IsDefault(const otRouterConfiguration &aRouterConfiguration);
+bool IsDefault(const otRouterAdministrationConfiguration &aRouterAdministration);
 
 /**
  * Check whether effective parameters match exactly.
  *
- * Excludes reserved bits in the mRouterRoleConfigurationBitmap, so that reserved bits will not be overwritten
- * in the stored settings while the used bits continue to match.
+ * mRouterAdministrationOptions ignores differences in reserved bits, so that existing settings will not be overwritten
+ * if all other parameters match.
  *
- * @param[in]  aRouterConfiguration  The first Router Configuratin to compare
- * @param[in]  aOther  The other Router Configuratin to compare
+ * @param[in]  aRouterAdministration  The first otRouterAdministrationConfiguration to compare
+ * @param[in]  aOther  Another otRouterAdministrationConfiguration to compare
  *
- * @retval TRUE if any value differs.
- * @retval FALSE if all values match.
+ * @retval TRUE if any compared parameter differs.
+ * @retval FALSE if all parameters match, excluding reserved bits.
  */
-bool ConfigurationsDiffer(const otRouterConfiguration &aRouterConfiguration, const otRouterConfiguration &aOther);
+bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aRouterAdministration,
+                          const otRouterAdministrationConfiguration &aOther);
 
-template <typename T> T GetDefaultCodeOrValue(T &aParameterReference, T aDefaultValue, T aDefaultCode)
+template <typename T> static inline T GetDefaultCodeOrValue(T &aParameterReference, T aDefaultValue, T aDefaultCode)
 {
     return (aParameterReference == aDefaultValue) ? aDefaultCode : aParameterReference;
 }
 
-void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold);
-void ApplyTransitionTimingValue(uint16_t &aTransitionTimingReference, uint16_t aNewTiming, uint16_t aDefaultTiming);
+bool IsValidThreshold(uint8_t aRouterThreshold);
+bool IsValidTransitionDelay(uint16_t aTransitionDelay, uint16_t aMaxValue);
 
-}; // namespace RouterConfiguration
+void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold);
+void ApplyTransitionDelayValue(uint16_t &aTransitionDelayReference, uint16_t aNewDelay, uint16_t aDefaultDelay);
+
+}; // namespace RouterAdministration
 #endif
 
 /**

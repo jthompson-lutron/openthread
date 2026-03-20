@@ -939,12 +939,12 @@ public:
      *
      * @returns The the current Router Role Configuration Data.
      */
-    otRouterConfiguration GetCurrentRouterRoleConfigurationData(void);
+    otRouterAdministrationConfiguration GetCurrentRouterAdministration(void);
 
     /**
      * Applies the Router Role Configuration if all parameters are valid.
      *
-     * @param[in]  aRouterConfigurationData The the router configuration to apply.
+     * @param[in]  aRouterAdministration The the otRouterAdministrationConfiguration to apply.
      *
      * @pre Requires mDeviceMode has been restored first to correctly apply the stored Router Eligibile state.
      *
@@ -952,7 +952,7 @@ public:
      * @retval kErrorInvalidArgs  Some parameters are not valid.  No changes have been applied.
      * @retval kErrorNotCapable   The device is not capable of becoming a router.  No changes have been applied.
      */
-    Error ApplyRouterRoleConfigurationData(otRouterConfiguration aRouterConfigurationData);
+    Error ApplyRouterAdministration(const otRouterAdministrationConfiguration &aRouterAdministration);
 
     /**
      * Indicates whether or not router role transition (upgrade from REED or downgrade to REED) is pending.

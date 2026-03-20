@@ -69,6 +69,30 @@ static constexpr uint32_t kWaitTime = 10 * 1000;
 
 static constexpr uint8_t kMaxRouters = 32;
 
+/**
+ * Leader RouterAdministration configuration with thresholds set to 32, but without the managed option set.
+ */
+constexpr otRouterAdministrationConfiguration kLeaderAdministration{
+    // The Leader should not require enabling the managed upgrade reason, as routers do
+    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
+
+constexpr otRouterAdministrationConfiguration kRouterAdministration{
+    // The Routers do require enabling the managed upgrade reason,
+    // as their upgrade threshold will be higher than the default upgrade threshold.
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
+
 void Test5_2_3(void)
 {
     Core nexus;
@@ -88,14 +112,11 @@ void Test5_2_3(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
-    leader.Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
-    leader.Get<Mle::Mle>().SetRouterUpgradeThreshold(kMaxRouters);
-    leader.Get<Mle::Mle>().SetRouterDowngradeThreshold(kMaxRouters);
+    leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration);
+
     for (uint8_t i = 0; i < kMaxRouters; i++)
     {
-        routers[i]->Get<Mle::Mle>().SetPriorityRouterUpgradeReasonEnabledStatus(true);
-        routers[i]->Get<Mle::Mle>().SetRouterUpgradeThreshold(kMaxRouters);
-        routers[i]->Get<Mle::Mle>().SetRouterDowngradeThreshold(kMaxRouters);
+        routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
     }
 
     // Topology:

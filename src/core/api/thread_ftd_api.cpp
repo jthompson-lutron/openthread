@@ -142,40 +142,117 @@ void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout)
     AsCoreType(aInstance).Get<Mle::Mle>().SetNetworkIdTimeout(aTimeout);
 }
 
-otRouterConfiguration otThreadGetCurrentRouterConfiguration(otInstance *aInstance)
+otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otInstance *aInstance)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterRoleConfigurationData();
+    return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterAdministration();
 }
 
-void otThreadSetSpecifiedRouterConfiguration(otInstance *aInstance, otRouterConfiguration aRouterConfiguration)
+void otThreadApplySpecifiedRouterAdministration(otInstance                         *aInstance,
+                                                otRouterAdministrationConfiguration aRouterAdministration)
 {
-    OT_UNUSED_VARIABLE(aInstance);
-    OT_UNUSED_VARIABLE(aRouterConfiguration);
-    // TODO: Implement actual setting in core
+    AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(aRouterAdministration);
 }
 
-otError otThreadGetRouterConfigurationProfile(otInstance                   *aInstance,
-                                              otRouterConfiguration         aRouterConfiguration,
-                                              otRouterConfigurationProfile *aProfile)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-    OT_UNUSED_VARIABLE(aRouterConfiguration);
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileDefault{
+    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
 
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfilePreferred{
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    25, 0, 30,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    30, 300, 300,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_ONE_HALF, OT_CAPACITY_USED_TWO_THIRDS};
+
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileReluctant{
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    0, 60, 120,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    17, 0, 60,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_NONE, OT_CAPACITY_USED_ONE_THIRD};
+
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileIneligible{
+    OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+    OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+    OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_UNCHANGED, OT_CAPACITY_USED_UNCHANGED};
+
+otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aRouterAdministration,
+                                               otRouterAdministrationProfile             &aProfile)
+{
     Error error = kErrorNone;
 
-    AssertPointerIsNotNull(aProfile);
-
-    // TODO: Implement actual profile matching logic
-    error = kErrorNotFound;
+    if (aRouterAdministration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
+    {
+        // If only the ineligibility bit is set, then indicate the Router Administration is Ineligible
+        aProfile = OT_ROUTER_ADMINISTRATION_INELIGIBLE;
+    }
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
+                                                              kRouterAdministrationProfileDefault))
+    {
+        aProfile = OT_ROUTER_ADMINISTRATION_DEFAULT;
+    }
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
+                                                              kRouterAdministrationProfilePreferred))
+    {
+        aProfile = OT_ROUTER_ADMINISTRATION_PREFERRED;
+    }
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
+                                                              kRouterAdministrationProfileReluctant))
+    {
+        aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
+    }
+    else
+    {
+        error = kErrorNotFound;
+    }
 
     return error;
 }
 
-void otThreadSetRouterConfigurationProfile(otInstance *aInstance, otRouterConfigurationProfile aProfile)
+void otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile)
 {
-    OT_UNUSED_VARIABLE(aInstance);
-    OT_UNUSED_VARIABLE(aProfile);
-    // TODO: Implement actual profile setting in core
+    otRouterAdministrationConfiguration administrationConfiguration;
+
+    switch (aProfile)
+    {
+    case OT_ROUTER_ADMINISTRATION_DEFAULT:
+        administrationConfiguration = kRouterAdministrationProfileDefault;
+        break;
+    case OT_ROUTER_ADMINISTRATION_PREFERRED:
+        administrationConfiguration = kRouterAdministrationProfilePreferred;
+        break;
+    case OT_ROUTER_ADMINISTRATION_RELUCTANT:
+        administrationConfiguration = kRouterAdministrationProfileReluctant;
+        break;
+    case OT_ROUTER_ADMINISTRATION_INELIGIBLE:
+        administrationConfiguration = kRouterAdministrationProfileIneligible;
+        break;
+    default:
+        OT_ASSERT(false);
+        ExitNow();
+    }
+
+    AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(administrationConfiguration);
+
+exit:
+    return;
 }
 
 uint8_t otThreadGetChildRouterLinks(otInstance *aInstance)

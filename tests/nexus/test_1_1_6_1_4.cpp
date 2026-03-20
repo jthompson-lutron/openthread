@@ -67,11 +67,6 @@ static constexpr uint32_t kEchoTimeout = 5000;
 static constexpr uint32_t kPollPeriod = 500;
 
 /**
- * Threshold to keep nodes as REEDs.
- */
-static constexpr uint8_t kReedThreshold = 0;
-
-/**
  * Default threshold for router upgrade.
  */
 static constexpr uint8_t kDefaultThreshold = 16;
@@ -164,8 +159,8 @@ void Test6_1_4(void)
     /**
      * Join Router 2 and Router 3 as REEDs (children) and prevent them from upgrading to routers yet.
      */
-    router2.Get<Mle::Mle>().SetRouterUpgradeThreshold(kReedThreshold);
-    router3.Get<Mle::Mle>().SetRouterUpgradeThreshold(kReedThreshold);
+    otThreadApplyRouterAdministrationProfile(&router2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     router2.Join(leader);
     router3.Join(leader);
@@ -248,7 +243,7 @@ void Test6_1_4(void)
     /**
      * Enable REED_1 (Router 3) to upgrade to router.
      */
-    router3.Get<Mle::Mle>().SetRouterUpgradeThreshold(kDefaultThreshold);
+    otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_DEFAULT);
 
     Log("---------------------------------------------------------------------------------------");
     Log("Step 7: REED_1");
