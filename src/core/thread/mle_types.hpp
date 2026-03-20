@@ -880,9 +880,6 @@ namespace RouterAdministration {
 constexpr uint8_t kRouterRoleConfigMask =
     OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK | OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK;
 
-// --------------
-// Default values
-
 /**
  * Default upgrade threshold value
  *
