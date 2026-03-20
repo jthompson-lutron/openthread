@@ -929,7 +929,7 @@ bool IsValidTransitionDelay(uint16_t aTransitionDelay, uint16_t aMaxValue);
 void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold);
 void ApplyTransitionDelayValue(uint16_t &aTransitionDelayReference, uint16_t aNewDelay, uint16_t aDefaultDelay);
 
-}; // namespace RouterAdministration
+} // namespace RouterAdministration
 #endif
 
 /**
