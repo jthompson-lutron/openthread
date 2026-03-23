@@ -220,7 +220,7 @@ CapacityThreshold::CapacityThreshold(otCapacityThreshold aCapacityThreshold)
 {
 }
 
-bool CapacityThreshold::IsValidValue(otCapacityThreshold aCapacityThreshold)
+bool CapacityThreshold::IsValidConfiguration(otCapacityThreshold aCapacityThreshold)
 {
     return aCapacityThreshold <= OT_CAPACITY_FULL || aCapacityThreshold == OT_CAPACITY_USED_UNCHANGED ||
            aCapacityThreshold == OT_CAPACITY_USED_DEFAULT;
@@ -262,7 +262,7 @@ uint16_t CapacityThreshold::GetThresholdOfMaximum(uint16_t aFullMaxCount) const
 
 void CapacityThreshold::ApplyCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault)
 {
-    if (IsValidValue(aNewCapacity))
+    if (IsValidConfiguration(aNewCapacity) && aNewCapacity != OT_CAPACITY_USED_UNCHANGED)
     {
         mCapacityThreshold = ((aNewCapacity == OT_CAPACITY_USED_DEFAULT) ? aDefault : aNewCapacity);
     }
@@ -306,16 +306,16 @@ bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aRouterAdmi
 {
     // mRouterAdministrationOptions ignores differences in reserved bits,
     // so that existing settings will not be overwritten if all other parameters match.
-    return (((aRouterAdministration.mRouterAdministrationOptions & kRouterRoleConfigMask) ==
-             (aOther.mRouterAdministrationOptions & kRouterRoleConfigMask)) &&
-            (aRouterAdministration.mRouterUpgradeThreshold == aOther.mRouterUpgradeThreshold) &&
-            (aRouterAdministration.mRouterDowngradeThreshold == aOther.mRouterDowngradeThreshold) &&
-            (aRouterAdministration.mParentPriorityThreshold == aOther.mParentPriorityThreshold) &&
-            (aRouterAdministration.mParentDeprioritizationThreshold == aOther.mParentDeprioritizationThreshold) &&
-            (aRouterAdministration.mRouterUpgradeDelayMinimum == aOther.mRouterUpgradeDelayMinimum) &&
-            (aRouterAdministration.mRouterUpgradeDelayJitter == aOther.mRouterUpgradeDelayJitter) &&
-            (aRouterAdministration.mRouterDowngradeDelayMinimum == aOther.mRouterDowngradeDelayMinimum) &&
-            (aRouterAdministration.mRouterDowngradeDelayJitter == aOther.mRouterDowngradeDelayJitter));
+    return (((aRouterAdministration.mRouterAdministrationOptions & kRouterRoleConfigMask) !=
+             (aOther.mRouterAdministrationOptions & kRouterRoleConfigMask)) ||
+            (aRouterAdministration.mRouterUpgradeThreshold != aOther.mRouterUpgradeThreshold) ||
+            (aRouterAdministration.mRouterDowngradeThreshold != aOther.mRouterDowngradeThreshold) ||
+            (aRouterAdministration.mParentPriorityThreshold != aOther.mParentPriorityThreshold) ||
+            (aRouterAdministration.mParentDeprioritizationThreshold != aOther.mParentDeprioritizationThreshold) ||
+            (aRouterAdministration.mRouterUpgradeDelayMinimum != aOther.mRouterUpgradeDelayMinimum) ||
+            (aRouterAdministration.mRouterUpgradeDelayJitter != aOther.mRouterUpgradeDelayJitter) ||
+            (aRouterAdministration.mRouterDowngradeDelayMinimum != aOther.mRouterDowngradeDelayMinimum) ||
+            (aRouterAdministration.mRouterDowngradeDelayJitter != aOther.mRouterDowngradeDelayJitter));
 }
 
 template <typename T, T aUnchangedCode, T aDefaultCode>

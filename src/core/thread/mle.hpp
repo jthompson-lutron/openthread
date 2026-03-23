@@ -933,16 +933,16 @@ public:
     void SetNetworkIdTimeout(uint8_t aTimeout) { mNetworkIdTimeout = aTimeout; }
 
     /**
-     * Gets the current Router Role Configuration Data.
+     * Gets the current Router Administration Configuration.
      *
      * If the value of any parameter matches its default, then the value returned is replaced by its "UseDefault" code.
      *
-     * @returns The the current Router Role Configuration Data.
+     * @returns The the current Router Administration Configuration.
      */
     otRouterAdministrationConfiguration GetCurrentRouterAdministration(void);
 
     /**
-     * Applies the Router Role Configuration if all parameters are valid.
+     * Applies the Router Administration Configuration if all parameters are valid.
      *
      * @param[in]  aConfiguration The the otRouterAdministrationConfiguration to apply.
      *

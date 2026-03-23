@@ -60,33 +60,6 @@ static constexpr uint32_t kDowngradeWaitTime = 300 * 1000;
 static constexpr uint32_t kEchoResponseWaitTime = 10000;
 
 /**
- * Leader Router Administration configuration with thresholds set to 32, but without the managed option set.
- */
-constexpr otRouterAdministrationConfiguration kLeaderAdministration{
-    // The Leader should not require enabling the managed upgrade reason, as routers do
-    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
-    // Upgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
-    // Downgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
-    // Parent Priorities (+1, -1)
-    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
-
-/**
- * Router Administration configuration with thresholds set to 32, with the managed option set.
- */
-constexpr otRouterAdministrationConfiguration kRouterAdministration{
-    // The Routers do require enabling the managed upgrade reason,
-    // as their upgrade threshold will be higher than the default upgrade threshold.
-    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
-    // Upgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
-    // Downgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
-    // Parent Priorities (+1, -1)
-    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
-
-/**
  * Number of routers for the test.
  */
 static constexpr uint16_t kInitialRouterCount = 23;
@@ -110,7 +83,8 @@ void Test_5_2_6(void)
      * Router ID Management  | 5.9.9        | 5.9.9
      */
 
-    Core nexus;
+    Core                          nexus;
+    otRouterAdministrationProfile profile;
 
     Node &leader  = nexus.CreateNode();
     Node &router1 = nexus.CreateNode(); // DUT
@@ -131,11 +105,15 @@ void Test_5_2_6(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
-    VerifyOrQuit(leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration) == kErrorNone);
-
     for (uint16_t i = 0; i < kInitialRouterCount - 2; i++)
     {
-        VerifyOrQuit(routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration) == kErrorNone);
+        VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&routers[i]->GetInstance(),
+                                                              OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
+
+        // Verify that the profile can be read back correctly
+        VerifyOrQuit(otThreadGetRouterAdministrationProfile(
+                         otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance()), profile) == kErrorNone &&
+                     profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
     }
 
     Log("---------------------------------------------------------------------------------------");
@@ -172,7 +150,13 @@ void Test_5_2_6(void)
      */
     Node &router24 = nexus.CreateNode();
     router24.SetName("ROUTER_24");
-    VerifyOrQuit(router24.Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration) == kErrorNone);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router24.GetInstance(),
+                                                          OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
+
+    // Verify that the profile can be read back correctly
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router24.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
 
     router24.Join(leader);
     for (uint32_t i = 0; i < kAttachToRouterTime / 1000; i++)

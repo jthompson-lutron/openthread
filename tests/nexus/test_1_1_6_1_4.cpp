@@ -95,7 +95,8 @@ void Test6_1_4(void)
      * Attaching to a Parent | 4.7.1        | 4.5.1
      */
 
-    Core nexus;
+    Core                          nexus;
+    otRouterAdministrationProfile profile;
 
     Node &leader  = nexus.CreateNode();
     Node &router1 = nexus.CreateNode();
@@ -163,6 +164,14 @@ void Test6_1_4(void)
                  kErrorNone);
     VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
                  kErrorNone);
+
+    // Verify that the profile can be read back correctly
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router2.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router3.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     router2.Join(leader);
     router3.Join(leader);
@@ -247,6 +256,11 @@ void Test6_1_4(void)
      */
     VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_DEFAULT) ==
                  kErrorNone);
+
+    // Verify that the profile can be read back correctly
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router3.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_DEFAULT);
 
     Log("---------------------------------------------------------------------------------------");
     Log("Step 7: REED_1");

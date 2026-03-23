@@ -848,7 +848,8 @@ class CapacityThreshold
 public:
     CapacityThreshold(otCapacityThreshold aCapacityThreshold);
 
-    static bool IsValidValue(otCapacityThreshold aCapacityThreshold);
+    /** Verify that the given value is valid configuration, including unchanged and default codes. */
+    static bool IsValidConfiguration(otCapacityThreshold aCapacityThreshold);
 
     otCapacityThreshold GetDefaultCodeOrValue(otCapacityThreshold aDefaultValue) const;
     uint16_t            GetThresholdOfMaximum(uint16_t aFullMaxCount) const;

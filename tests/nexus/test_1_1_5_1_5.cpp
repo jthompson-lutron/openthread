@@ -56,19 +56,6 @@ static constexpr uint32_t kStep2WaitTime = 200 * 1000;
  */
 static constexpr uint32_t kStep5WaitTime = 300 * 1000;
 
-/**
- * Router Administration configuration with low jitter
- */
-constexpr otRouterAdministrationConfiguration kLowJitterRouterAdministration{
-    // The Leader should not require enabling the managed upgrade reason, as routers do
-    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
-    // Upgrade (Threshold, Min Delay, Delay Jitter)
-    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, 0, 1,
-    // Downgrade (Threshold, Min Delay, Delay Jitter)
-    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, 0, 1,
-    // Parent Priorities (+1, -1)
-    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
-
 void Test5_1_5(void)
 {
     /**
@@ -116,7 +103,8 @@ void Test5_1_5(void)
     nexus.AdvanceTime(kFormNetworkTime);
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());
 
-    VerifyOrQuit(router1.Get<Mle::Mle>().ApplyRouterAdministration(kLowJitterRouterAdministration) == kErrorNone);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router1.GetInstance(),
+                                                          OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER) == kErrorNone);
     router1.Join(leader);
     nexus.AdvanceTime(kAttachToRouterTime);
     VerifyOrQuit(router1.Get<Mle::Mle>().IsRouter());

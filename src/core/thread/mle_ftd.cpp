@@ -3505,7 +3505,7 @@ otRouterAdministrationConfiguration Mle::GetCurrentRouterAdministration(void)
 {
     using namespace RouterAdministration;
     // Reserved bits are set to 0
-    bool RouterAdministrationOptions =
+    uint8_t RouterAdministrationOptions =
         ((mUseManagedRouterUpgradeReason ? OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK : 0) |
          (IsRouterEligible() ? 0 : OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK));
     return otRouterAdministrationConfiguration{
@@ -3536,8 +3536,9 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     Error error = kErrorNone;
 
     // Parameter Valid Checks
-    VerifyOrExit(CapacityThreshold::IsValidValue(aConfiguration.mParentPriorityThreshold), error = kErrorInvalidArgs);
-    VerifyOrExit(CapacityThreshold::IsValidValue(aConfiguration.mParentDeprioritizationThreshold),
+    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentPriorityThreshold),
+                 error = kErrorInvalidArgs);
+    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentDeprioritizationThreshold),
                  error = kErrorInvalidArgs);
 
     VerifyOrExit(IsValidThreshold(mRouterUpgradeThreshold), error = kErrorInvalidArgs);

@@ -474,10 +474,13 @@ otError otThreadApplySpecifiedRouterAdministration(otInstance                   
  */
 typedef enum
 {
-    OT_ROUTER_ADMINISTRATION_DEFAULT    = 0, ///< The profile matching the default configuration
-    OT_ROUTER_ADMINISTRATION_PREFERRED  = 1, ///< Preferred attempts to upgrade, with parent priority
-    OT_ROUTER_ADMINISTRATION_RELUCTANT  = 2, ///< Upgrades only if a child has no other parent options
-    OT_ROUTER_ADMINISTRATION_INELIGIBLE = 3, ///< Ineligible to become or continue function as a router
+    OT_ROUTER_ADMINISTRATION_INELIGIBLE = 0, ///< Ineligible to become or continue function as a router
+    OT_ROUTER_ADMINISTRATION_DEFAULT    = 1, ///< The profile matching the default configuration
+    OT_ROUTER_ADMINISTRATION_PREFERRED  = 2, ///< Preferred attempts to upgrade, with parent priority
+    OT_ROUTER_ADMINISTRATION_RELUCTANT  = 3, ///< Upgrades only if a child has no other parent options
+    // Test profiles
+    OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER     = 4, ///< Default configuration with minimal jitter
+    OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS = 5, ///< Default configuration with maxumum thresholds
 } otRouterAdministrationProfile;
 
 /**

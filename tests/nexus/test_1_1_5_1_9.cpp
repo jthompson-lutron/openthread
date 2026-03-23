@@ -138,6 +138,16 @@ void Test5_1_9(void)
     reed2.Join(leader);
     VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
                  kErrorNone);
+
+    // Verify that the profile can be read back correctly
+    otRouterAdministrationProfile profile;
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&reed1.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&reed2.GetInstance()),
+                                                        profile) == kErrorNone &&
+                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+
     nexus.AdvanceTime(kJoinTime);
 
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());

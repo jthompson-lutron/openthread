@@ -3919,13 +3919,13 @@ Done
 Apply the Router Administration by profile name.
 
 ```bash
+> routeradmin Ineligible
+Done
 > routeradmin Default
 Done
 > routeradmin Preferred
 Done
 > routeradmin Reluctant
-Done
-> routeradmin Ineligible
 Done
 ```
 
@@ -3934,13 +3934,13 @@ Done
 Apply the Router Administration by profile name.
 
 ```bash
+> routeradmin 2 14 14 254 65534 65534 254 65534 65534
+Done
 > routeradmin 0 15 15 255 65535 65535 255 65535 65535
 Done
 > routeradmin 1 3 4 25 0 30 30 300 300
 Done
 > routeradmin 1 0 2 0 60 120 17 0 60
-Done
-> routeradmin 2 14 14 254 65534 65534 254 65534 65534
 Done
 ```
 
