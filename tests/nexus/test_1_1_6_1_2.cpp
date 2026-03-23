@@ -115,7 +115,8 @@ void RunTest6_1_2(Topology aTopology, const char *aJsonFile)
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());
 
     reed.Join(leader);
-    otThreadApplyRouterAdministrationProfile(&reed.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
     nexus.AdvanceTime(kReedToRouterTime);
     VerifyOrQuit(reed.Get<Mle::Mle>().IsChild());
 

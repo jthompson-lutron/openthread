@@ -460,10 +460,14 @@ otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otIns
  * @param[in]  aInstance            A pointer to an OpenThread instance.
  * @param[in]  aConfiguration The specified Router Administration Configuration.
  *
+ * @retval OT_ERROR_NONE         Successfully applied the values.
+ * @retval OT_ERROR_INVALID_ARGS Some parameters are not valid.  No changes have been applied.
+ * @retval OT_ERROR_NOT_CAPABLE  The device is not capable of becoming a router.  No changes have been applied.
+ *
  * @sa otThreadGetCurrentRouterAdministration
  */
-void otThreadApplySpecifiedRouterAdministration(otInstance                         *aInstance,
-                                                otRouterAdministrationConfiguration aConfiguration);
+otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
+                                                   const otRouterAdministrationConfiguration &aConfiguration);
 
 /**
  * Specified Router Administration profiles.
@@ -498,9 +502,13 @@ otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfi
  * @param[in]  aInstance A pointer to an OpenThread instance.
  * @param[in]  aProfile  The specified Router Administration Configuration profile.
  *
+ * @retval OT_ERROR_NONE         Successfully applied the values.
+ * @retval OT_ERROR_INVALID_ARGS Profile is not valid.  No changes have been applied.
+ * @retval OT_ERROR_NOT_CAPABLE  The device is not capable of becoming a router.  No changes have been applied.
+ *
  * @sa otThreadGetCurrentRouterAdministration
  */
-void otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile);
+otError otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile);
 
 /**
  * Get the MLE_CHILD_ROUTER_LINKS parameter used in the REED role.

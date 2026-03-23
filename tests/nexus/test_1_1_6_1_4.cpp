@@ -159,8 +159,10 @@ void Test6_1_4(void)
     /**
      * Join Router 2 and Router 3 as REEDs (children) and prevent them from upgrading to routers yet.
      */
-    otThreadApplyRouterAdministrationProfile(&router2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
-    otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
 
     router2.Join(leader);
     router3.Join(leader);
@@ -243,7 +245,8 @@ void Test6_1_4(void)
     /**
      * Enable REED_1 (Router 3) to upgrade to router.
      */
-    otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_DEFAULT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router3.GetInstance(), OT_ROUTER_ADMINISTRATION_DEFAULT) ==
+                 kErrorNone);
 
     Log("---------------------------------------------------------------------------------------");
     Log("Step 7: REED_1");

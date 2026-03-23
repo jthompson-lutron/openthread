@@ -131,11 +131,11 @@ void Test_5_2_6(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
-    leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration);
+    VerifyOrQuit(leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration) == kErrorNone);
 
     for (uint16_t i = 0; i < kInitialRouterCount - 2; i++)
     {
-        routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
+        VerifyOrQuit(routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration) == kErrorNone);
     }
 
     Log("---------------------------------------------------------------------------------------");
@@ -172,7 +172,7 @@ void Test_5_2_6(void)
      */
     Node &router24 = nexus.CreateNode();
     router24.SetName("ROUTER_24");
-    router24.Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
+    VerifyOrQuit(router24.Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration) == kErrorNone);
 
     router24.Join(leader);
     for (uint32_t i = 0; i < kAttachToRouterTime / 1000; i++)

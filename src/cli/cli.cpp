@@ -6027,19 +6027,19 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         // If only one argument is given, match against known profile names to apply
         if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_DEFAULT])
         {
-            otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_DEFAULT);
+            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_DEFAULT);
         }
         else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_PREFERRED])
         {
-            otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_PREFERRED);
+            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_PREFERRED);
         }
         else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_RELUCTANT])
         {
-            otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
         }
         else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_INELIGIBLE])
         {
-            otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_INELIGIBLE);
+            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_INELIGIBLE);
         }
         else
         {
@@ -6094,7 +6094,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
     }
     else
     {
-        error = OT_ERROR_INVALID_ARGS;
+        error = OT_ERROR_INVALID_COMMAND;
     }
 
 exit:
@@ -8453,10 +8453,7 @@ void Interpreter::SetCommandTimeout(uint32_t aTimeoutMilli)
 
 otError Interpreter::ProcessCommand(Arg aArgs[])
 {
-#define CmdEntry(aCommandString)                                   \
-    {                                                              \
-        aCommandString, &Interpreter::Process<Cmd(aCommandString)> \
-    }
+#define CmdEntry(aCommandString) {aCommandString, &Interpreter::Process<Cmd(aCommandString)>}
 
     static constexpr Command kCommands[] = {
 #if OPENTHREAD_FTD || OPENTHREAD_MTD

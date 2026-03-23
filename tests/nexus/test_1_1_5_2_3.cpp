@@ -112,11 +112,11 @@ void Test5_2_3(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
-    leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration);
+    VerifyOrQuit(leader.Get<Mle::Mle>().ApplyRouterAdministration(kLeaderAdministration) == kErrorNone);
 
     for (uint8_t i = 0; i < kMaxRouters; i++)
     {
-        routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration);
+        VerifyOrQuit(routers[i]->Get<Mle::Mle>().ApplyRouterAdministration(kRouterAdministration) == kErrorNone);
     }
 
     // Topology:

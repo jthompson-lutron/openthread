@@ -133,9 +133,11 @@ void Test5_1_9(void)
     nexus.AdvanceTime(kAttachToRouterTime);
 
     reed1.Join(leader);
-    otThreadApplyRouterAdministrationProfile(&reed1.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed1.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
     reed2.Join(leader);
-    otThreadApplyRouterAdministrationProfile(&reed2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed2.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
     nexus.AdvanceTime(kJoinTime);
 
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());

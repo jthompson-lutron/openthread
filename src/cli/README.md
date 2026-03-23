@@ -3929,7 +3929,6 @@ Done
 Done
 ```
 
-
 ### routeradmin \<options\> \<parent_priority\> \<parent_deprioritization\> \<upgrade_threshold\> \<upgrade_delay_min\> \<upgrade_delay_jitter\> \<downgrade_threshold\> \<downgrade_delay_min\> \<downgrade_delay_jitter\>
 
 Apply the Router Administration by profile name.

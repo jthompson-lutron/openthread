@@ -147,7 +147,8 @@ void Test5_1_11(void)
     nexus.AdvanceTime(kFormNetworkTime);
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());
 
-    otThreadApplyRouterAdministrationProfile(&reed1.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed1.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
+                 kErrorNone);
     reed1.Join(leader);
     nexus.AdvanceTime(kAttachAsChildTime);
     VerifyOrQuit(reed1.Get<Mle::Mle>().IsChild());

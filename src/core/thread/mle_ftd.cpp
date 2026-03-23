@@ -3530,15 +3530,14 @@ otRouterAdministrationConfiguration Mle::GetCurrentRouterAdministration(void)
             CapacityThreshold::kParentDeprioritizationThresholdDefault)};
 }
 
-Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &aRouterAdministration)
+Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &aConfiguration)
 {
     using namespace RouterAdministration;
     Error error = kErrorNone;
 
     // Parameter Valid Checks
-    VerifyOrExit(CapacityThreshold::IsValidValue(aRouterAdministration.mParentPriorityThreshold),
-                 error = kErrorInvalidArgs);
-    VerifyOrExit(CapacityThreshold::IsValidValue(aRouterAdministration.mParentDeprioritizationThreshold),
+    VerifyOrExit(CapacityThreshold::IsValidValue(aConfiguration.mParentPriorityThreshold), error = kErrorInvalidArgs);
+    VerifyOrExit(CapacityThreshold::IsValidValue(aConfiguration.mParentDeprioritizationThreshold),
                  error = kErrorInvalidArgs);
 
     VerifyOrExit(IsValidThreshold(mRouterUpgradeThreshold), error = kErrorInvalidArgs);
@@ -3553,35 +3552,35 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     VerifyOrExit(IsValidTransitionDelay(mRouterDowngradeDelayJitter, OT_ROUTER_TRANSITION_DELAY_JITTER_MAX_ALLOWED),
                  error = kErrorInvalidArgs);
 
-    VerifyOrExit(aRouterAdministration.mRouterUpgradeThreshold <= aRouterAdministration.mRouterDowngradeThreshold,
+    VerifyOrExit(aConfiguration.mRouterUpgradeThreshold <= aConfiguration.mRouterDowngradeThreshold,
                  error = kErrorInvalidArgs);
 
-    SuccessOrExit(error = SetRouterEligible(!(aRouterAdministration.mRouterAdministrationOptions &
-                                              OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)));
+    SuccessOrExit(error = SetRouterEligible(
+                      !(aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)));
 
     // If successful, apply all values, which may not change if "unchanged" codes are configured
 
     mUseManagedRouterUpgradeReason =
-        aRouterAdministration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK;
+        aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK;
 
     // When applying, also check for values to indicate using defaults or unchanged values
-    mParentPriorityThreshold.ApplyCapacityThreshold(aRouterAdministration.mParentPriorityThreshold,
+    mParentPriorityThreshold.ApplyCapacityThreshold(aConfiguration.mParentPriorityThreshold,
                                                     CapacityThreshold::kParentPriorityThresholdDefault);
-    mParentDeprioritizationThreshold.ApplyCapacityThreshold(aRouterAdministration.mParentDeprioritizationThreshold,
+    mParentDeprioritizationThreshold.ApplyCapacityThreshold(aConfiguration.mParentDeprioritizationThreshold,
                                                             CapacityThreshold::kParentDeprioritizationThresholdDefault);
 
-    ApplyRouterThreshold(mRouterUpgradeThreshold, aRouterAdministration.mRouterUpgradeThreshold,
+    ApplyRouterThreshold(mRouterUpgradeThreshold, aConfiguration.mRouterUpgradeThreshold,
                          kRouterUpgradeThresholdDefault);
-    ApplyRouterThreshold(mRouterDowngradeThreshold, aRouterAdministration.mRouterDowngradeThreshold,
+    ApplyRouterThreshold(mRouterDowngradeThreshold, aConfiguration.mRouterDowngradeThreshold,
                          kRouterDowngradeThresholdDefault);
 
-    ApplyTransitionDelayValue(mRouterUpgradeDelayMinimum, aRouterAdministration.mRouterUpgradeDelayMinimum,
+    ApplyTransitionDelayValue(mRouterUpgradeDelayMinimum, aConfiguration.mRouterUpgradeDelayMinimum,
                               kRouterTransitionMinimumDefault);
-    ApplyTransitionDelayValue(mRouterUpgradeDelayJitter, aRouterAdministration.mRouterUpgradeDelayJitter,
+    ApplyTransitionDelayValue(mRouterUpgradeDelayJitter, aConfiguration.mRouterUpgradeDelayJitter,
                               kRouterTransitionJitterDefault);
-    ApplyTransitionDelayValue(mRouterDowngradeDelayMinimum, aRouterAdministration.mRouterDowngradeDelayMinimum,
+    ApplyTransitionDelayValue(mRouterDowngradeDelayMinimum, aConfiguration.mRouterDowngradeDelayMinimum,
                               kRouterTransitionMinimumDefault);
-    ApplyTransitionDelayValue(mRouterDowngradeDelayJitter, aRouterAdministration.mRouterDowngradeDelayJitter,
+    ApplyTransitionDelayValue(mRouterDowngradeDelayJitter, aConfiguration.mRouterDowngradeDelayJitter,
                               kRouterTransitionJitterDefault);
 
 exit:

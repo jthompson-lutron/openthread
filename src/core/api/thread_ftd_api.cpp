@@ -147,10 +147,10 @@ otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otIns
     return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterAdministration();
 }
 
-void otThreadApplySpecifiedRouterAdministration(otInstance                         *aInstance,
-                                                otRouterAdministrationConfiguration aRouterAdministration)
+otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
+                                                   const otRouterAdministrationConfiguration &aConfiguration)
 {
-    AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(aRouterAdministration);
+    return AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(aConfiguration);
 }
 
 constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileDefault{
@@ -193,28 +193,25 @@ constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileInelig
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_UNCHANGED, OT_CAPACITY_USED_UNCHANGED};
 
-otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aRouterAdministration,
+otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aConfiguration,
                                                otRouterAdministrationProfile             &aProfile)
 {
     Error error = kErrorNone;
 
-    if (aRouterAdministration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
+    if (aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
     {
         // If only the ineligibility bit is set, then indicate the Router Administration is Ineligible
         aProfile = OT_ROUTER_ADMINISTRATION_INELIGIBLE;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
-                                                              kRouterAdministrationProfileDefault))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfileDefault))
     {
         aProfile = OT_ROUTER_ADMINISTRATION_DEFAULT;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
-                                                              kRouterAdministrationProfilePreferred))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfilePreferred))
     {
         aProfile = OT_ROUTER_ADMINISTRATION_PREFERRED;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aRouterAdministration,
-                                                              kRouterAdministrationProfileReluctant))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfileReluctant))
     {
         aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
     }
@@ -226,33 +223,34 @@ otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfi
     return error;
 }
 
-void otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile)
+otError otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouterAdministrationProfile aProfile)
 {
-    otRouterAdministrationConfiguration administrationConfiguration;
+    otError                                    error;
+    const otRouterAdministrationConfiguration *administrationConfiguration;
 
     switch (aProfile)
     {
     case OT_ROUTER_ADMINISTRATION_DEFAULT:
-        administrationConfiguration = kRouterAdministrationProfileDefault;
+        administrationConfiguration = &kRouterAdministrationProfileDefault;
         break;
     case OT_ROUTER_ADMINISTRATION_PREFERRED:
-        administrationConfiguration = kRouterAdministrationProfilePreferred;
+        administrationConfiguration = &kRouterAdministrationProfilePreferred;
         break;
     case OT_ROUTER_ADMINISTRATION_RELUCTANT:
-        administrationConfiguration = kRouterAdministrationProfileReluctant;
+        administrationConfiguration = &kRouterAdministrationProfileReluctant;
         break;
     case OT_ROUTER_ADMINISTRATION_INELIGIBLE:
-        administrationConfiguration = kRouterAdministrationProfileIneligible;
+        administrationConfiguration = &kRouterAdministrationProfileIneligible;
         break;
     default:
         OT_ASSERT(false);
-        ExitNow();
+        ExitNow(error = kErrorInvalidArgs);
     }
 
-    AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(administrationConfiguration);
+    error = AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(*administrationConfiguration);
 
 exit:
-    return;
+    return error;
 }
 
 uint8_t otThreadGetChildRouterLinks(otInstance *aInstance)
