@@ -5994,7 +5994,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
             otThreadGetCurrentRouterAdministration(GetInstancePtr());
         const char *profileName;
 
-        profileName = (otThreadGetRouterAdministrationProfile(routerAdministration, profile) == OT_ERROR_NONE &&
+        profileName = (otThreadGetRouterAdministrationProfile(&routerAdministration, &profile) == OT_ERROR_NONE &&
                        profile <= OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS)
                           ? kProfileName[profile]
                           : "Unknown";
@@ -6100,7 +6100,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         SuccessOrExit(error = aArgs[7].ParseAsUint16(routerAdministration.mRouterDowngradeDelayMinimum));
         SuccessOrExit(error = aArgs[8].ParseAsUint16(routerAdministration.mRouterDowngradeDelayJitter));
 
-        error = otThreadApplySpecifiedRouterAdministration(GetInstancePtr(), routerAdministration);
+        error = otThreadApplySpecifiedRouterAdministration(GetInstancePtr(), &routerAdministration);
     }
     else
     {

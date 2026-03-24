@@ -94,9 +94,10 @@ void Test5_2_3(void)
                          &routers[i]->GetInstance(), OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS) == kErrorNone);
 
         // Verify that the profile can be read back correctly
-        otRouterAdministrationProfile profile;
-        VerifyOrQuit(otThreadGetRouterAdministrationProfile(
-                         otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance()), profile) == kErrorNone &&
+        otRouterAdministrationProfile       profile;
+        otRouterAdministrationConfiguration currentRouterConfiguration =
+            otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance());
+        VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone &&
                      profile == OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS);
     }
 

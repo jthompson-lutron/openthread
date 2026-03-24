@@ -467,7 +467,7 @@ otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otIns
  * @sa otThreadGetCurrentRouterAdministration
  */
 otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
-                                                   const otRouterAdministrationConfiguration &aConfiguration);
+                                                   const otRouterAdministrationConfiguration *aConfiguration);
 
 /**
  * Specified Router Administration profiles.
@@ -496,8 +496,8 @@ typedef enum
  * @sa otThreadGetCurrentRouterAdministration
  * @sa otThreadApplyRouterAdministrationProfile
  */
-otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aConfiguration,
-                                               otRouterAdministrationProfile             &aProfile);
+otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration *aConfiguration,
+                                               otRouterAdministrationProfile             *aProfile);
 
 /**
  * Set the Router Administration Configuration to the specified profile.

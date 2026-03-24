@@ -148,9 +148,10 @@ otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otIns
 }
 
 otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
-                                                   const otRouterAdministrationConfiguration &aConfiguration)
+                                                   const otRouterAdministrationConfiguration *aConfiguration)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(aConfiguration);
+    AssertPointerIsNotNull(aConfiguration);
+    return AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(*aConfiguration);
 }
 
 constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileIneligible{
@@ -212,37 +213,40 @@ constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMaximu
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
 
-otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration &aConfiguration,
-                                               otRouterAdministrationProfile             &aProfile)
+otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration *aConfiguration,
+                                               otRouterAdministrationProfile             *aProfile)
 {
     Error error = kErrorNone;
 
-    if (aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
+    AssertPointerIsNotNull(aConfiguration);
+    AssertPointerIsNotNull(aProfile);
+
+    if (aConfiguration->mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
     {
         // If only the ineligibility bit is set, then indicate the Router Administration is Ineligible
-        aProfile = OT_ROUTER_ADMINISTRATION_INELIGIBLE;
+        *aProfile = OT_ROUTER_ADMINISTRATION_INELIGIBLE;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfileDefault))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration, kRouterAdministrationProfileDefault))
     {
-        aProfile = OT_ROUTER_ADMINISTRATION_DEFAULT;
+        *aProfile = OT_ROUTER_ADMINISTRATION_DEFAULT;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfilePreferred))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration, kRouterAdministrationProfilePreferred))
     {
-        aProfile = OT_ROUTER_ADMINISTRATION_PREFERRED;
+        *aProfile = OT_ROUTER_ADMINISTRATION_PREFERRED;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration, kRouterAdministrationProfileReluctant))
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration, kRouterAdministrationProfileReluctant))
     {
-        aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
+        *aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration,
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
                                                               kRouterAdministrationProfileMinimalJitter))
     {
-        aProfile = OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER;
+        *aProfile = OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER;
     }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(aConfiguration,
+    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
                                                               kRouterAdministrationProfileMaximumThresholds))
     {
-        aProfile = OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS;
+        *aProfile = OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS;
     }
     else
     {

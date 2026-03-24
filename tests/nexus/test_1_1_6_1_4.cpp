@@ -166,11 +166,13 @@ void Test6_1_4(void)
                  kErrorNone);
 
     // Verify that the profile can be read back correctly
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router2.GetInstance()),
-                                                        profile) == kErrorNone &&
+    otRouterAdministrationConfiguration router2Configuration =
+        otThreadGetCurrentRouterAdministration(&router2.GetInstance());
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router2Configuration, &profile) == kErrorNone &&
                  profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router3.GetInstance()),
-                                                        profile) == kErrorNone &&
+    otRouterAdministrationConfiguration router3ConfigurationAsReluctant =
+        otThreadGetCurrentRouterAdministration(&router3.GetInstance());
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router3ConfigurationAsReluctant, &profile) == kErrorNone &&
                  profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     router2.Join(leader);
@@ -258,8 +260,9 @@ void Test6_1_4(void)
                  kErrorNone);
 
     // Verify that the profile can be read back correctly
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router3.GetInstance()),
-                                                        profile) == kErrorNone &&
+    otRouterAdministrationConfiguration router3ConfigurationAsDefault =
+        otThreadGetCurrentRouterAdministration(&router3.GetInstance());
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router3ConfigurationAsDefault, &profile) == kErrorNone &&
                  profile == OT_ROUTER_ADMINISTRATION_DEFAULT);
 
     Log("---------------------------------------------------------------------------------------");

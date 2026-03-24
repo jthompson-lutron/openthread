@@ -111,8 +111,9 @@ void Test_5_2_6(void)
                                                               OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
 
         // Verify that the profile can be read back correctly
-        VerifyOrQuit(otThreadGetRouterAdministrationProfile(
-                         otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance()), profile) == kErrorNone &&
+        otRouterAdministrationConfiguration currentRouterConfiguration =
+            otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance());
+        VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone &&
                      profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
     }
 
@@ -154,8 +155,9 @@ void Test_5_2_6(void)
                                                           OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
 
     // Verify that the profile can be read back correctly
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&router24.GetInstance()),
-                                                        profile) == kErrorNone &&
+    otRouterAdministrationConfiguration router24Configuration =
+        otThreadGetCurrentRouterAdministration(&router24.GetInstance());
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router24Configuration, &profile) == kErrorNone &&
                  profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
 
     router24.Join(leader);

@@ -150,9 +150,10 @@ void RunTest6_1_6(Topology aTopology, const char *aJsonFile)
     VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&reed1.GetInstance(), OT_ROUTER_ADMINISTRATION_RELUCTANT) ==
                  kErrorNone);
     // Verify that the profile can be read back correctly
-    otRouterAdministrationProfile profile;
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(otThreadGetCurrentRouterAdministration(&reed1.GetInstance()),
-                                                        profile) == kErrorNone &&
+    otRouterAdministrationProfile       profile;
+    otRouterAdministrationConfiguration reed1ConfigurationAsDefault =
+        otThreadGetCurrentRouterAdministration(&reed1.GetInstance());
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed1ConfigurationAsDefault, &profile) == kErrorNone &&
                  profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     nexus.AdvanceTime(kStabilizationTime);
