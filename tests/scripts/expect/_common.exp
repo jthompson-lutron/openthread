@@ -121,7 +121,10 @@ proc spawn_node {id {type ""} {args ""}} {
             send "factoryreset\n"
             wait_for "state" "disabled"
             expect_line "Done"
-            send "routerselectionjitter 1\n"
+            send "routeradmin MinJitter\n"
+            expect_line "Done"
+            send "routeradmin\n"
+            expect_line "MinJitter"
             expect_line "Done"
         }
         cli {
@@ -130,7 +133,10 @@ proc spawn_node {id {type ""} {args ""}} {
             send "factoryreset\n"
             wait_for "state" "disabled"
             expect_line "Done"
-            send "routerselectionjitter 1\n"
+            send "routeradmin MinJitter\n"
+            expect_line "Done"
+            send "routeradmin\n"
+            expect_line "MinJitter"
             expect_line "Done"
         }
         mtd {

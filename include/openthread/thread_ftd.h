@@ -479,8 +479,8 @@ typedef enum
     OT_ROUTER_ADMINISTRATION_PREFERRED  = 2, ///< Preferred attempts to upgrade, with parent priority
     OT_ROUTER_ADMINISTRATION_RELUCTANT  = 3, ///< Upgrades only if a child has no other parent options
     // Test profiles
-    OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER     = 4, ///< Default configuration with minimal jitter
-    OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS = 5, ///< Default configuration with maxumum thresholds
+    OT_ROUTER_ADMINISTRATION_MIN_JITTER                = 4, ///< Default configuration with minimal jitter
+    OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER = 5, ///< Default configuration with maxumum thresholds
 } otRouterAdministrationProfile;
 
 /**

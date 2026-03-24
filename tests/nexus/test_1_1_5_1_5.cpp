@@ -104,13 +104,13 @@ void Test5_1_5(void)
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());
 
     VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router1.GetInstance(),
-                                                          OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER) == kErrorNone);
+                                                          OT_ROUTER_ADMINISTRATION_MIN_JITTER) == kErrorNone);
     // Verify that the profile can be read back correctly
     otRouterAdministrationProfile       profile;
     otRouterAdministrationConfiguration router1Configuration =
         otThreadGetCurrentRouterAdministration(&router1.GetInstance());
     VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router1Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER);
+                 profile == OT_ROUTER_ADMINISTRATION_MIN_JITTER);
 
     router1.Join(leader);
     nexus.AdvanceTime(kAttachToRouterTime);

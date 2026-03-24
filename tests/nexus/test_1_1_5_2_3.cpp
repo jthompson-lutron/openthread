@@ -91,14 +91,14 @@ void Test5_2_3(void)
     for (uint8_t i = 0; i < kMaxRouters; i++)
     {
         VerifyOrQuit(otThreadApplyRouterAdministrationProfile(
-                         &routers[i]->GetInstance(), OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS) == kErrorNone);
+                         &routers[i]->GetInstance(), OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER) == kErrorNone);
 
         // Verify that the profile can be read back correctly
         otRouterAdministrationProfile       profile;
         otRouterAdministrationConfiguration currentRouterConfiguration =
             otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance());
         VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone &&
-                     profile == OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS);
+                     profile == OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER);
     }
 
     // Topology:

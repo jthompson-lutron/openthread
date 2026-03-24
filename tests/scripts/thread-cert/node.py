@@ -1886,12 +1886,14 @@ class NodeImpl:
         self._expect_done()
 
     def set_router_upgrade_threshold(self, threshold):
-        cmd = 'routerupgradethreshold %d' % threshold
+        """Set only the router administration upgrade threshold."""
+        cmd = f'routeradmin 0 14 14 {threshold} 65534 65534 254 65534 65534'
         self.send_command(cmd)
         self._expect_done()
 
     def set_router_downgrade_threshold(self, threshold):
-        cmd = 'routerdowngradethreshold %d' % threshold
+        """Set only the router administration downgrade threshold."""
+        cmd = f'routeradmin 0 14 14 254 65534 65534 {threshold} 65534 65534'
         self.send_command(cmd)
         self._expect_done()
 
@@ -2690,7 +2692,8 @@ class NodeImpl:
             self.set_log_level(5)
 
     def set_router_selection_jitter(self, jitter):
-        cmd = 'routerselectionjitter %d' % jitter
+        """Set only the transition timing jitter of the router administration."""
+        cmd = f'routeradmin 0 14 14 254 65534 {jitter} 254 65534 {jitter}'
         self.send_command(cmd)
         self._expect_done()
 
@@ -3801,7 +3804,7 @@ class NodeImpl:
     def get_channel_monitor_info(self) -> Dict:
         """
         Returns:
-            Dict of channel monitor info, e.g. 
+            Dict of channel monitor info, e.g.
                 {'enabled': '1',
                  'interval': '41000',
                  'threshold': '-75',

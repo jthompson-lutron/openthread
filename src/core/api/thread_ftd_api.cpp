@@ -194,7 +194,7 @@ constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileReluct
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_ONE_THIRD};
 
-constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMinimalJitter{
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMinJitter{
     OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
     // Upgrade (Threshold, Min Delay, Delay Jitter)
     OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
@@ -203,13 +203,13 @@ constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMinima
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
 
-constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMaximumThresholds{
+constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMaxThresholdsMinJitter{
     // Managed upgrade reason required, because the upgrade threshold > 16
     OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
     // Upgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
     // Downgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
 
@@ -239,14 +239,14 @@ otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfi
         *aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
     }
     else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
-                                                              kRouterAdministrationProfileMinimalJitter))
+                                                              kRouterAdministrationProfileMinJitter))
     {
-        *aProfile = OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER;
+        *aProfile = OT_ROUTER_ADMINISTRATION_MIN_JITTER;
     }
     else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
-                                                              kRouterAdministrationProfileMaximumThresholds))
+                                                              kRouterAdministrationProfileMaxThresholdsMinJitter))
     {
-        *aProfile = OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS;
+        *aProfile = OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER;
     }
     else
     {
@@ -275,11 +275,11 @@ otError otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouter
     case OT_ROUTER_ADMINISTRATION_RELUCTANT:
         administrationConfiguration = &kRouterAdministrationProfileReluctant;
         break;
-    case OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER:
-        administrationConfiguration = &kRouterAdministrationProfileMinimalJitter;
+    case OT_ROUTER_ADMINISTRATION_MIN_JITTER:
+        administrationConfiguration = &kRouterAdministrationProfileMinJitter;
         break;
-    case OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS:
-        administrationConfiguration = &kRouterAdministrationProfileMaximumThresholds;
+    case OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER:
+        administrationConfiguration = &kRouterAdministrationProfileMaxThresholdsMinJitter;
         break;
     default:
         OT_ASSERT(false);

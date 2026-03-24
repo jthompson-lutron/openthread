@@ -5969,10 +5969,10 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
 {
     otError                  error          = OT_ERROR_NONE;
     static const char *const kProfileName[] = {"Ineligible", "Default",   "Preferred",
-                                               "Reluctant",  "MinJitter", "MaxThresholds"};
+                                               "Reluctant",  "MinJitter", "MaxThresholdsMinJitter"};
     static_assert(OT_ROUTER_ADMINISTRATION_INELIGIBLE == 0, "OT_ROUTER_ADMINISTRATION_INELIGIBLE");
-    static_assert(OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS + 1 == sizeof(kProfileName) / sizeof(kProfileName[0]),
-                  "OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS");
+    static_assert(OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER + 1 == sizeof(kProfileName) / sizeof(kProfileName[0]),
+                  "OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER");
 
     /**
      * @cli routeradmin
@@ -5995,7 +5995,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         const char *profileName;
 
         profileName = (otThreadGetRouterAdministrationProfile(&routerAdministration, &profile) == OT_ERROR_NONE &&
-                       profile <= OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS)
+                       profile <= OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER)
                           ? kProfileName[profile]
                           : "Unknown";
 
@@ -6017,7 +6017,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
      * Done
      * @endcode
      * @cparam routeradmin
-     * [@ca{Ineligible}|@ca{Default}|@ca{Preferred}|@ca{Reluctant}|@ca{MinJitter}|@ca{MaxThresholds}]
+     * [@ca{Ineligible}|@ca{Default}|@ca{Preferred}|@ca{Reluctant}|@ca{MinJitter}|@ca{MaxThresholdsMinJitter}]
      * @par
      * Apply the Router Administration by profile name.
      */
@@ -6040,14 +6040,14 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         {
             error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
         }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER])
+        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MIN_JITTER])
         {
-            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MINIMAL_JITTER);
+            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MIN_JITTER);
         }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS])
+        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER])
         {
             error =
-                otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MAXIMUM_THRESHOLDS);
+                otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER);
         }
         else
         {

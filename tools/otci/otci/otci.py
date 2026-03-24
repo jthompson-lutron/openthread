@@ -660,13 +660,9 @@ class OTCI(object):
     # Router configurations
     #
 
-    def get_router_selection_jitter(self):
-        """Get the ROUTER_SELECTION_JITTER value."""
-        return self.__parse_int(self.execute_command('routerselectionjitter'))
-
-    def set_router_selection_jitter(self, jitter: int):
-        """Set the ROUTER_SELECTION_JITTER value."""
-        self.execute_command(f'routerselectionjitter {jitter}')
+    def set_router_administration_to_min_jitter(self):
+        """Set the routeradmin profile to MinJitter."""
+        self.execute_command('routeradmin MinJitter')
 
     def get_network_id_timeout(self) -> int:
         """Get the NETWORK_ID_TIMEOUT parameter used in the Router role."""
