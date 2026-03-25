@@ -56,8 +56,7 @@ PORT_OFFSET = int(os.getenv('PORT_OFFSET', "0"))
 INFRA_DNS64 = int(os.getenv('NAT64', 0))
 
 # Test-specific profiles begin with 'Test'
-ROUTER_ADMINISTRATION_PROFILE = Literal["Ineligible", "Default", "Preferred", "Reluctant", "TestMaxThresholds",
-                                        "TestMaxThresholdsLowJitter"]
+ROUTER_ADMINISTRATION_PROFILE = Literal["Ineligible", "Default", "Preferred", "Reluctant", "TestMaxThresholdsLowJitter"]
 
 
 class OtbrDocker:
@@ -1888,6 +1887,8 @@ class NodeImpl:
         """Get the router administration configuration to a specified profile.
 
         Supports verifying only the standard API profiles reported over the CLI.
+
+        Note: Asserts that the result is one of the test profiles.
         """
         self.send_command('routeradmin')
         routeradmin_output = self._expect_command_output()
@@ -1900,8 +1901,8 @@ class NodeImpl:
             r"routeradmin upthreshold:(?P<upthreshold>\d+), updelaymin:(?P<updelaymin>\d+), "
             r"updelayjitter:(?P<updelayjitter>\d+)", routeradmin_output[2])
         downgrade_match = re.match(
-            r"routeradmin downthreshold:(?P<upthreshold>\d+), downdelaymin:(?P<upthreshold>\d+), "
-            r"downdelayjitter:(?P<upthreshold>\d+)", routeradmin_output[3])
+            r"routeradmin downthreshold:(?P<downthreshold>\d+), downdelaymin:(?P<downdelaymin>\d+), "
+            r"downdelayjitter:(?P<downdelayjitter>\d+)", routeradmin_output[3])
         assert profile_match and options_match and upgrade_match and downgrade_match
 
         if profile_match.group("profile") in get_args(ROUTER_ADMINISTRATION_PROFILE):
@@ -1909,30 +1910,24 @@ class NodeImpl:
             profile: ROUTER_ADMINISTRATION_PROFILE = profile_match.group("profile")
         else:
             # The profile is not one of the standard profiles.  Check if it is one of the test profiles.
-            assert int(options_match.group("options")) == 0  # Default
+            assert int(options_match.group("options")) == 1  # Managed
             assert int(options_match.group("parentpriorityhigh")) == 15  # Default
             assert int(options_match.group("parentprioritylow")) == 15  # Default
-            assert int(options_match.group("upthreshold")) == 32  # Custom, Max
-            assert int(options_match.group("updelaymin")) == 65535  # Default
-            assert (updelayjitter := int(options_match.group("updelayjitter"))) == (65535, 3)  # Default or custom
-            assert int(options_match.group("downthreshold")) == 32  # Custom, Max
-            assert int(options_match.group("downdelaymin")) == 65535  # Default
-            assert (downdelayjitter := int(options_match.group("downdelayjitter"))) == (65535, 3)  # Default or custom
-            if updelayjitter == 65535 and downdelayjitter == 65535:
-                profile = "TestMaxThresholds"
-            else:
-                profile = "TestMaxThresholdsLowJitter"
+            assert int(upgrade_match.group("upthreshold")) == 32  # Custom, Max
+            assert int(upgrade_match.group("updelaymin")) == 65535  # Default
+            assert int(upgrade_match.group("updelayjitter")) == 1  # Custom, Low Jitter
+            assert int(downgrade_match.group("downthreshold")) == 32  # Custom, Max
+            assert int(downgrade_match.group("downdelaymin")) == 65535  # Default
+            assert int(downgrade_match.group("downdelayjitter")) == 1  # Custom, Low Jitter
+            profile = "TestMaxThresholdsLowJitter"
         return profile
 
     def set_router_administration_profile(self, profile: ROUTER_ADMINISTRATION_PROFILE):
         """Set the router administration configuration to a specified profile."""
         assert profile in get_args(ROUTER_ADMINISTRATION_PROFILE)
-        if profile == "TestMaxThresholds":
-            # Applies defaults for all parameters except the up/downgrade thresholds
-            cmd = 'routeradmin 0 15 15 32 65535 65535 32 65535 65535'
-        elif profile == "TestMaxThresholdsLowJitter":
+        if profile == "TestMaxThresholdsLowJitter":
             # Applies defaults for all parameters except the up/downgrade thresholds and jitter
-            cmd = 'routeradmin 0 15 15 32 65535 3 32 65535 3'
+            cmd = 'routeradmin 1 15 15 32 65535 1 32 65535 1'
         else:
             cmd = f'routeradmin {profile}'
         self.send_command(cmd)

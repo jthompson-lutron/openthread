@@ -37,131 +37,131 @@ class test_router_reattach(thread_cert.TestCase):
     TOPOLOGY = {
         1: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         2: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         3: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         4: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         5: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         6: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         7: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         8: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         9: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         10: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         11: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         12: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         13: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         14: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         15: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         16: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         17: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         18: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         19: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         20: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         21: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         22: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         23: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         24: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         25: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         26: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         27: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         28: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         29: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         30: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         31: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
         32: {
             'mode': 'rdn',
-            'router_administration_profile': 'TestMaxThresholds'
+            'router_administration_profile': 'TestMaxThresholdsLowJitter'
         },
     }
 
