@@ -272,17 +272,12 @@ class Node(object):
     def set_panid(self, panid):
         self._cli_no_output('panid', panid)
 
-    def get_router_upgrade_threshold(self):
-        return self._cli_single_output('routerupgradethreshold')
+    def set_router_selection_jitter(self, jitter: int):
+        """Set only the transition timing jitter of the router administration.
 
-    def set_router_upgrade_threshold(self, threshold):
-        self._cli_no_output('routerupgradethreshold', threshold)
-
-    def get_router_selection_jitter(self):
-        return self._cli_single_output('routerselectionjitter')
-
-    def set_router_selection_jitter(self, jitter):
-        self._cli_no_output('routerselectionjitter', jitter)
+        Intended for use when only changing the transition timing jitter.
+        """
+        self._cli_no_output('routeradmin', 255, 14, 14, 254, 65534, jitter, 254, 65534, jitter)
 
     def get_router_eligible(self):
         return self._cli_single_output('routereligible')

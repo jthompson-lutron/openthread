@@ -143,12 +143,12 @@ void Test5_1_9(void)
     otRouterAdministrationProfile       profile;
     otRouterAdministrationConfiguration reed1Configuration =
         otThreadGetCurrentRouterAdministration(&reed1.GetInstance());
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed1Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed1Configuration, &profile) == kErrorNone);
+    VerifyOrQuit(profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
     otRouterAdministrationConfiguration reed2Configuration =
         otThreadGetCurrentRouterAdministration(&reed2.GetInstance());
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed2Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed2Configuration, &profile) == kErrorNone);
+    VerifyOrQuit(profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     nexus.AdvanceTime(kJoinTime);
 

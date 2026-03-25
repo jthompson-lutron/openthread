@@ -102,8 +102,8 @@ Mle::Mle(Instance &aInstance)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     , mMaxChildIpAddresses(0)
 #endif
-    , mParentPriorityThreshold(CapacityThreshold::kParentPriorityThresholdDefault)
-    , mParentDeprioritizationThreshold(CapacityThreshold::kParentDeprioritizationThresholdDefault)
+    , mParentPriorityHighThreshold(CapacityThreshold::kParentPriorityHighThresholdDefault)
+    , mParentPriorityLowThreshold(CapacityThreshold::kParentPriorityLowThresholdDefault)
     , mPreviousPartitionIdRouter(0)
     , mPreviousPartitionId(0)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE

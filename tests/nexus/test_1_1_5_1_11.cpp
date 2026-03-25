@@ -154,8 +154,8 @@ void Test5_1_11(void)
     otRouterAdministrationProfile       profile;
     otRouterAdministrationConfiguration reed1Configuration =
         otThreadGetCurrentRouterAdministration(&reed1.GetInstance());
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed1Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&reed1Configuration, &profile) == kErrorNone);
+    VerifyOrQuit(profile == OT_ROUTER_ADMINISTRATION_RELUCTANT);
 
     reed1.Join(leader);
     nexus.AdvanceTime(kAttachAsChildTime);

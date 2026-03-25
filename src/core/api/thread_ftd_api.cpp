@@ -142,6 +142,20 @@ void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout)
     AsCoreType(aInstance).Get<Mle::Mle>().SetNetworkIdTimeout(aTimeout);
 }
 
+void otThreadSetRouterUpgradeThreshold(otInstance *aInstance, uint8_t aThreshold)
+{
+    otRouterAdministrationConfiguration routerAdministration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        // Upgrade (Threshold, Min Delay, Delay Jitter)
+        aThreshold, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        // Downgrade (Threshold, Min Delay, Delay Jitter)
+        OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        // Parent Priorities (+1, -1)
+        OT_CAPACITY_USED_UNCHANGED, OT_CAPACITY_USED_UNCHANGED};
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(routerAdministration));
+}
+
 otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterAdministration();
@@ -152,6 +166,14 @@ otError otThreadApplySpecifiedRouterAdministration(otInstance                   
 {
     AssertPointerIsNotNull(aConfiguration);
     return AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(*aConfiguration);
+}
+
+bool otThreadRouterAdministrationConfigurationsDiffer(const otRouterAdministrationConfiguration *aConfiguration,
+                                                      const otRouterAdministrationConfiguration *aOther)
+{
+    AssertPointerIsNotNull(aConfiguration);
+    AssertPointerIsNotNull(aOther);
+    return Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration, *aOther);
 }
 
 constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileIneligible{
@@ -194,25 +216,6 @@ constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileReluct
     // Parent Priorities (+1, -1)
     OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_ONE_THIRD};
 
-constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMinJitter{
-    OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT,
-    // Upgrade (Threshold, Min Delay, Delay Jitter)
-    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
-    // Downgrade (Threshold, Min Delay, Delay Jitter)
-    OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
-    // Parent Priorities (+1, -1)
-    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
-
-constexpr otRouterAdministrationConfiguration kRouterAdministrationProfileMaxThresholdsMinJitter{
-    // Managed upgrade reason required, because the upgrade threshold > 16
-    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED,
-    // Upgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
-    // Downgrade (Threshold, Min Delay, Delay Jitter)
-    32, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, 1,
-    // Parent Priorities (+1, -1)
-    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
-
 otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfiguration *aConfiguration,
                                                otRouterAdministrationProfile             *aProfile)
 {
@@ -221,7 +224,7 @@ otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfi
     AssertPointerIsNotNull(aConfiguration);
     AssertPointerIsNotNull(aProfile);
 
-    if (aConfiguration->mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
+    if (aConfiguration->mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK)
     {
         // If only the ineligibility bit is set, then indicate the Router Administration is Ineligible
         *aProfile = OT_ROUTER_ADMINISTRATION_INELIGIBLE;
@@ -237,16 +240,6 @@ otError otThreadGetRouterAdministrationProfile(const otRouterAdministrationConfi
     else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration, kRouterAdministrationProfileReluctant))
     {
         *aProfile = OT_ROUTER_ADMINISTRATION_RELUCTANT;
-    }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
-                                                              kRouterAdministrationProfileMinJitter))
-    {
-        *aProfile = OT_ROUTER_ADMINISTRATION_MIN_JITTER;
-    }
-    else if (!Mle::RouterAdministration::ConfigurationsDiffer(*aConfiguration,
-                                                              kRouterAdministrationProfileMaxThresholdsMinJitter))
-    {
-        *aProfile = OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER;
     }
     else
     {
@@ -274,12 +267,6 @@ otError otThreadApplyRouterAdministrationProfile(otInstance *aInstance, otRouter
         break;
     case OT_ROUTER_ADMINISTRATION_RELUCTANT:
         administrationConfiguration = &kRouterAdministrationProfileReluctant;
-        break;
-    case OT_ROUTER_ADMINISTRATION_MIN_JITTER:
-        administrationConfiguration = &kRouterAdministrationProfileMinJitter;
-        break;
-    case OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER:
-        administrationConfiguration = &kRouterAdministrationProfileMaxThresholdsMinJitter;
         break;
     default:
         OT_ASSERT(false);
@@ -322,6 +309,33 @@ otError otThreadBecomeRouter(otInstance *aInstance)
 otError otThreadBecomeLeader(otInstance *aInstance)
 {
     return AsCoreType(aInstance).Get<Mle::Mle>().BecomeLeader(Mle::Mle::kCheckLeaderWeight);
+}
+
+void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThreshold)
+{
+    otRouterAdministrationConfiguration routerAdministration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        // Upgrade (Threshold, Min Delay, Delay Jitter)
+        OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        // Downgrade (Threshold, Min Delay, Delay Jitter)
+        aThreshold, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE,
+        // Parent Priorities (+1, -1)
+        OT_CAPACITY_USED_UNCHANGED, OT_CAPACITY_USED_UNCHANGED};
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(routerAdministration));
+}
+
+void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint8_t aRouterJitter)
+{
+    otRouterAdministrationConfiguration routerAdministration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        // Upgrade (Threshold, Min Delay, Delay Jitter)
+        OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, aRouterJitter,
+        // Downgrade (Threshold, Min Delay, Delay Jitter)
+        OT_ROUTER_THRESHOLD_UNCHANGED_CODE, OT_ROUTER_TRANSITION_DELAY_UNCHANGED_CODE, aRouterJitter,
+        // Parent Priorities (+1, -1)
+        OT_CAPACITY_USED_UNCHANGED, OT_CAPACITY_USED_UNCHANGED};
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(routerAdministration));
 }
 
 otError otThreadGetChildInfoById(otInstance *aInstance, uint16_t aChildId, otChildInfo *aChildInfo)

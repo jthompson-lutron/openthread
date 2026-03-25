@@ -69,6 +69,16 @@ static constexpr uint32_t kWaitTime = 10 * 1000;
 
 static constexpr uint8_t kMaxRouters = 32;
 
+static constexpr otRouterAdministrationConfiguration kCustomRouterAdministrationConfiguration{
+    // Must be managed to allow upgrades to kMaxRouters above the default
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK,
+    // Upgrade (Threshold, Min Delay, Delay Jitter)
+    kMaxRouters, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Downgrade (Threshold, Min Delay, Delay Jitter)
+    kMaxRouters, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE,
+    // Parent Priorities (+1, -1)
+    OT_CAPACITY_USED_DEFAULT, OT_CAPACITY_USED_DEFAULT};
+
 void Test5_2_3(void)
 {
     Core nexus;
@@ -88,17 +98,18 @@ void Test5_2_3(void)
 
     Instance::SetLogLevel(kLogLevelNote);
 
+    // The leader does not require updating its router administration configuration
+
     for (uint8_t i = 0; i < kMaxRouters; i++)
     {
-        VerifyOrQuit(otThreadApplyRouterAdministrationProfile(
-                         &routers[i]->GetInstance(), OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER) == kErrorNone);
+        VerifyOrQuit(otThreadApplySpecifiedRouterAdministration(
+                         &routers[i]->GetInstance(), &kCustomRouterAdministrationConfiguration) == kErrorNone);
 
-        // Verify that the profile can be read back correctly
-        otRouterAdministrationProfile       profile;
+        // Verify that the router administration configuration can be read back correctly
         otRouterAdministrationConfiguration currentRouterConfiguration =
             otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance());
-        VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone &&
-                     profile == OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER);
+        VerifyOrQuit(!otThreadRouterAdministrationConfigurationsDiffer(&currentRouterConfiguration,
+                                                                       &kCustomRouterAdministrationConfiguration));
     }
 
     // Topology:

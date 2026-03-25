@@ -791,7 +791,10 @@ public:
     /**
      * Start a router upgrade role transition at a time selected from the current preferred status.
      */
-    void StartUpgradeTransition(void) { mRouterRoleTransition.StartUpgradeTransition(mRouterUpgradeDelayJitter); }
+    void StartUpgradeTransition(void)
+    {
+        mRouterRoleTransition.StartUpgradeTransition(mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter);
+    }
 
     /**
      * Indicates whether a node is the only router on the network.
@@ -2179,9 +2182,8 @@ private:
         bool IsDowngradePending(void) const { return mTransition == kDowngrading && mTimeout == 0; }
 
         void ClearTransition(void);
-        void StartDowngradeTransition(uint16_t aRouterDowngradeTransitionDelayMinimum,
-                                      uint16_t aRouterDowngradeTransitionDelayMaximum);
-        void StartUpgradeTransition(uint16_t aRouterSelectionJitter);
+        void StartDowngradeTransition(uint16_t aRouterTransitionMinimum, uint16_t aRouterTransitionJitter);
+        void StartUpgradeTransition(uint16_t aRouterTransitionMinimum, uint16_t aRouterTransitionJitter);
 
         void     IncreaseTimeout(uint8_t aIncrement) { mTimeout += aIncrement; }
         uint16_t GetTimeout(void) const { return mTimeout; }
@@ -2536,12 +2538,12 @@ private:
     uint8_t mMaxChildIpAddresses;
 #endif
 
-    // +1 parent priority if below the enumerated priority threshold.
+    // +1 parent priority if below the enumerated threshold.
     // Effectively disabled if CapacityThreshold::CAPACITY_USED_NONE.
-    CapacityThreshold mParentPriorityThreshold;
-    // -1 parent priority if above the enumerated deprioritization threshold.
+    CapacityThreshold mParentPriorityHighThreshold;
+    // -1 parent priority if above the enumerated threshold.
     // Effectively disabled if CapacityThreshold::CAPACITY_FULL.
-    CapacityThreshold mParentDeprioritizationThreshold;
+    CapacityThreshold mParentPriorityLowThreshold;
 
     uint32_t mPreviousPartitionIdRouter;
     uint32_t mPreviousPartitionId;

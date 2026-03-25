@@ -37,163 +37,131 @@ class test_router_reattach(thread_cert.TestCase):
     TOPOLOGY = {
         1: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         2: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         3: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         4: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         5: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         6: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         7: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         8: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         9: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         10: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         11: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         12: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         13: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         14: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         15: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         16: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         17: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         18: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         19: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         20: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         21: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         22: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         23: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         24: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         25: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         26: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         27: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         28: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         29: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         30: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         31: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
         32: {
             'mode': 'rdn',
-            'router_downgrade_threshold': 32,
-            'router_upgrade_threshold': 32
+            'router_administration_profile': 'TestMaxThresholds'
         },
     }
 
@@ -208,12 +176,12 @@ class test_router_reattach(thread_cert.TestCase):
             self.assertEqual(self.nodes[i].get_state(), 'router')
 
         self.nodes[2].reset()
-        self.nodes[2].set_router_selection_jitter(3)
-        self.nodes[2].set_router_upgrade_threshold(32)
-        self.nodes[2].set_router_downgrade_threshold(32)
+
+        self.nodes[2].set_router_administration_profile("TestMaxThresholdsLowJitter")
 
         self.nodes[2].start()
-        self.assertEqual(self.nodes[2].get_router_downgrade_threshold(), 32)
+        self.assertEqual(self.nodes[2].get_router_administration_profile(), "TestMaxThresholdsLowJitter")
+
         # Verify that the node restored as Router.
         self.simulator.go(1)
         self.assertEqual(self.nodes[2].get_state(), 'router')

@@ -103,14 +103,17 @@ void Test5_1_5(void)
     nexus.AdvanceTime(kFormNetworkTime);
     VerifyOrQuit(leader.Get<Mle::Mle>().IsLeader());
 
-    VerifyOrQuit(otThreadApplyRouterAdministrationProfile(&router1.GetInstance(),
-                                                          OT_ROUTER_ADMINISTRATION_MIN_JITTER) == kErrorNone);
-    // Verify that the profile can be read back correctly
-    otRouterAdministrationProfile       profile;
-    otRouterAdministrationConfiguration router1Configuration =
+    otThreadSetRouterSelectionJitter(&router1.GetInstance(), 1);
+
+    // Verify that the profile is read back as "unknown" due to the custom configuration
+    otRouterAdministrationConfiguration router1Administration =
         otThreadGetCurrentRouterAdministration(&router1.GetInstance());
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router1Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_MIN_JITTER);
+    otRouterAdministrationProfile profile;
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router1Administration, &profile) == kErrorNotFound);
+
+    // Verify that both jitter parameters have been updated
+    VerifyOrQuit(router1Administration.mRouterUpgradeDelayJitter == 1);
+    VerifyOrQuit(router1Administration.mRouterDowngradeDelayJitter == 1);
 
     router1.Join(leader);
     nexus.AdvanceTime(kAttachToRouterTime);

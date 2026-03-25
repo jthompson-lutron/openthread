@@ -740,15 +740,15 @@ public:
         RouterAdministration() = default;
         RouterAdministration(const otRouterAdministrationConfiguration &aOther)
         {
-            mRouterAdministrationOptions     = aOther.mRouterAdministrationOptions;
-            mParentPriorityThreshold         = aOther.mParentPriorityThreshold;
-            mParentDeprioritizationThreshold = aOther.mParentDeprioritizationThreshold;
-            mRouterUpgradeThreshold          = aOther.mRouterUpgradeThreshold;
-            mRouterDowngradeThreshold        = aOther.mRouterDowngradeThreshold;
-            mRouterUpgradeDelayMinimum       = aOther.mRouterUpgradeDelayMinimum;
-            mRouterUpgradeDelayJitter        = aOther.mRouterUpgradeDelayJitter;
-            mRouterDowngradeDelayMinimum     = aOther.mRouterDowngradeDelayMinimum;
-            mRouterDowngradeDelayJitter      = aOther.mRouterDowngradeDelayJitter;
+            mRouterAdministrationOptions = aOther.mRouterAdministrationOptions;
+            mParentPriorityHighThreshold = aOther.mParentPriorityHighThreshold;
+            mParentPriorityLowThreshold  = aOther.mParentPriorityLowThreshold;
+            mRouterUpgradeThreshold      = aOther.mRouterUpgradeThreshold;
+            mRouterDowngradeThreshold    = aOther.mRouterDowngradeThreshold;
+            mRouterUpgradeDelayMinimum   = aOther.mRouterUpgradeDelayMinimum;
+            mRouterUpgradeDelayJitter    = aOther.mRouterUpgradeDelayJitter;
+            mRouterDowngradeDelayMinimum = aOther.mRouterDowngradeDelayMinimum;
+            mRouterDowngradeDelayJitter  = aOther.mRouterDowngradeDelayJitter;
         }
 
         /**
@@ -765,7 +765,7 @@ public:
                 // Downgrade
                 mRouterDowngradeThreshold, mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter,
                 // Parent Priorities
-                mParentPriorityThreshold, mParentDeprioritizationThreshold};
+                mParentPriorityHighThreshold, mParentPriorityLowThreshold};
         }
 
     private:
@@ -776,8 +776,8 @@ public:
         // Packed order differs from otRouterAdministrationConfiguration to improve alignment
 
         uint8_t             mRouterAdministrationOptions;
-        otCapacityThreshold mParentPriorityThreshold : 4;
-        otCapacityThreshold mParentDeprioritizationThreshold : 4;
+        otCapacityThreshold mParentPriorityHighThreshold : 4;
+        otCapacityThreshold mParentPriorityLowThreshold : 4;
         uint8_t             mRouterUpgradeThreshold;
         uint8_t             mRouterDowngradeThreshold;
         uint16_t            mRouterUpgradeDelayMinimum;

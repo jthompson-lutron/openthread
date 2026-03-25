@@ -195,6 +195,8 @@ class TestCase(NcpSupportMixin, unittest.TestCase):
             if params['is_ftd']:
                 self.nodes[i].set_router_selection_jitter(params['router_selection_jitter'])
 
+            if 'router_administration_profile' in params:
+                self.nodes[i].set_router_administration_profile(params['router_administration_profile'])
             if 'router_upgrade_threshold' in params:
                 self.nodes[i].set_router_upgrade_threshold(params['router_upgrade_threshold'])
             if 'router_downgrade_threshold' in params:

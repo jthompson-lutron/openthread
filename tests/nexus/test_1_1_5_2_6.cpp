@@ -83,8 +83,7 @@ void Test_5_2_6(void)
      * Router ID Management  | 5.9.9        | 5.9.9
      */
 
-    Core                          nexus;
-    otRouterAdministrationProfile profile;
+    Core nexus;
 
     Node &leader  = nexus.CreateNode();
     Node &router1 = nexus.CreateNode(); // DUT
@@ -111,10 +110,11 @@ void Test_5_2_6(void)
                                                               OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
 
         // Verify that the profile can be read back correctly
+        otRouterAdministrationProfile       profile;
         otRouterAdministrationConfiguration currentRouterConfiguration =
             otThreadGetCurrentRouterAdministration(&routers[i]->GetInstance());
-        VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone &&
-                     profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
+        VerifyOrQuit(otThreadGetRouterAdministrationProfile(&currentRouterConfiguration, &profile) == kErrorNone);
+        VerifyOrQuit(profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
     }
 
     Log("---------------------------------------------------------------------------------------");
@@ -155,10 +155,11 @@ void Test_5_2_6(void)
                                                           OT_ROUTER_ADMINISTRATION_PREFERRED) == kErrorNone);
 
     // Verify that the profile can be read back correctly
+    otRouterAdministrationProfile       router24Profile;
     otRouterAdministrationConfiguration router24Configuration =
         otThreadGetCurrentRouterAdministration(&router24.GetInstance());
-    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router24Configuration, &profile) == kErrorNone &&
-                 profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
+    VerifyOrQuit(otThreadGetRouterAdministrationProfile(&router24Configuration, &router24Profile) == kErrorNone);
+    VerifyOrQuit(router24Profile == OT_ROUTER_ADMINISTRATION_PREFERRED);
 
     router24.Join(leader);
     for (uint32_t i = 0; i < kAttachToRouterTime / 1000; i++)

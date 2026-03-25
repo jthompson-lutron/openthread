@@ -3909,27 +3909,38 @@ Get the Router Administration Configuration details.
 > routeradmin
 routeradmin
 routeradmin profile: Default
-routeradmin options:0, parentpriority+1:15, parentpriority-1:15
+routeradmin options:0x00, parentpriority+1:15, parentpriority-1:15
 routeradmin upthreshold:255, updelaymin:65535, updelayjitter:65535
+routeradmin downthreshold:255, downdelaymin:65535, downdelayjitter:65535
 Done
 ```
 
-### routeradmin \<profile_name\>
+### routeradmin profile
+
+Get the Router Administration Configuration details.
+
+```bash
+> routeradmin profile
+Default
+Done
+```
+
+### routeradmin profile \<profile_name\>
 
 Apply the Router Administration by profile name.
 
 ```bash
-> routeradmin Ineligible
+> routeradmin profile Ineligible
 Done
-> routeradmin Default
+> routeradmin profile Default
 Done
-> routeradmin Preferred
+> routeradmin profile Preferred
 Done
-> routeradmin Reluctant
+> routeradmin profile Reluctant
 Done
 ```
 
-### routeradmin \<options\> \<parent_priority\> \<parent_deprioritization\> \<upgrade_threshold\> \<upgrade_delay_min\> \<upgrade_delay_jitter\> \<downgrade_threshold\> \<downgrade_delay_min\> \<downgrade_delay_jitter\>
+### routeradmin \<options\> \<parent_priority_high_threshold\> \<parent_priority_low_threshold\> \<upgrade_threshold\> \<upgrade_delay_min\> \<upgrade_delay_jitter\> \<downgrade_threshold\> \<downgrade_delay_min\> \<downgrade_delay_jitter\>
 
 Apply the Router Administration by profile name.
 

@@ -566,8 +566,10 @@ class OpenThreadTHCI(object):
         cmd = 'routerdowngradethreshold %s' % str(iThreshold)
         return self.__executeCommand(cmd)[-1] == 'Done'
 
-    def __setRouterSelectionJitter(self, iRouterJitter):
-        """set ROUTER_SELECTION_JITTER parameter for REED to upgrade to Router
+    def __setRouterSelectionJitter(self, iRouterJitter: int):
+        """Set only the transition timing jitter of the router administration.
+
+        Intended for use when only changing the transition timing jitter.
 
         Args:
             iRouterJitter: a random period prior to request Router ID for REED
@@ -576,7 +578,7 @@ class OpenThreadTHCI(object):
             True: successful to set the ROUTER_SELECTION_JITTER
             False: fail to set ROUTER_SELECTION_JITTER
         """
-        cmd = 'routerselectionjitter %s' % str(iRouterJitter)
+        cmd = f'routeradmin 255 14 14 254 65534 {iRouterJitter} 254 65534 {iRouterJitter}'
         return self.__executeCommand(cmd)[-1] == 'Done'
 
     def __setAddressfilterMode(self, mode):
@@ -3207,11 +3209,6 @@ class OpenThreadTHCI(object):
         self.__setMlIid(mliid)
         self.__setDUA(dua)
         return self.joinNetwork(deviceRole)
-
-    @API
-    def setParentPrio(self, prio):
-        cmd = 'parentpriority %u' % prio
-        return self.__executeCommand(cmd)[-1] == 'Done'
 
     @API
     def role_transition(self, role):

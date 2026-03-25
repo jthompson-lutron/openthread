@@ -853,7 +853,14 @@ public:
 
     otCapacityThreshold GetDefaultCodeOrValue(otCapacityThreshold aDefaultValue) const;
     uint16_t            GetThresholdOfMaximum(uint16_t aFullMaxCount) const;
-    void                ApplyCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault);
+
+    /**
+     * Apply a Capacity Threshold from a value or code.
+     *
+     * @param[in]  aNewCapacity The new capacity, which may be a default or unchanged code
+     * @param[in]  aDefault     The default capacity value
+     */
+    void ApplyCapacityThreshold(otCapacityThreshold aNewCapacity, otCapacityThreshold aDefault);
 
     // -------------------------------------------------------------------------------------------
     // Valid values specifying whether values should remain unchanged or use defaults when applied
@@ -865,9 +872,9 @@ public:
     // Defaults
 
     // +1 Priority disabled by default (<0 full).
-    static constexpr otCapacityThreshold kParentPriorityThresholdDefault = OT_CAPACITY_USED_NONE;
+    static constexpr otCapacityThreshold kParentPriorityHighThresholdDefault = OT_CAPACITY_USED_NONE;
     // -1 Priority at > 2/3 full by default
-    static constexpr otCapacityThreshold kParentDeprioritizationThresholdDefault = OT_CAPACITY_USED_TWO_THIRDS;
+    static constexpr otCapacityThreshold kParentPriorityLowThresholdDefault = OT_CAPACITY_USED_TWO_THIRDS;
 
 private:
     otCapacityThreshold mCapacityThreshold;
@@ -879,7 +886,7 @@ private:
 namespace RouterAdministration {
 
 constexpr uint8_t kRouterRoleConfigMask =
-    OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK | OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK;
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK | OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK;
 
 /**
  * Default upgrade threshold value
@@ -896,10 +903,12 @@ constexpr uint16_t kRouterTransitionJitterDefault  = 120; ///< (in sec) Default 
 /**
  * Check whether the configuration data applies default values to all parameters.
  *
+ * Note: default values and default codes will both be treated as defaults.
+ *
  * @retval TRUE if all values would become defaults when applied.
  * @retval FALSE if any value does not apply a default.
  */
-bool IsDefault(const otRouterAdministrationConfiguration &aRouterAdministration);
+bool IsDefault(const otRouterAdministrationConfiguration &aConfiguration);
 
 /**
  * Check whether effective parameters match exactly.
@@ -907,13 +916,15 @@ bool IsDefault(const otRouterAdministrationConfiguration &aRouterAdministration)
  * mRouterAdministrationOptions ignores differences in reserved bits, so that existing settings will not be overwritten
  * if all other parameters match.
  *
- * @param[in]  aRouterAdministration  The first otRouterAdministrationConfiguration to compare
+ * Note: default values and default codes do not match and will result in FALSE.
+ *
+ * @param[in]  aConfiguration  The first otRouterAdministrationConfiguration to compare
  * @param[in]  aOther  Another otRouterAdministrationConfiguration to compare
  *
  * @retval TRUE if any compared parameter differs.
  * @retval FALSE if all parameters match, excluding reserved bits.
  */
-bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aRouterAdministration,
+bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aConfiguration,
                           const otRouterAdministrationConfiguration &aOther);
 
 template <typename T> static inline T GetDefaultCodeOrValue(T &aParameterReference, T aDefaultValue, T aDefaultCode)
@@ -924,7 +935,22 @@ template <typename T> static inline T GetDefaultCodeOrValue(T &aParameterReferen
 bool IsValidThreshold(uint8_t aRouterThreshold);
 bool IsValidTransitionDelay(uint16_t aTransitionDelay, uint16_t aMaxValue);
 
+/**
+ * Apply a Router Threshold, replacing default codes with default values and ignoring unchanged codes.
+ *
+ * @param[out] aRouterThresholdReference The threshold parameter to update
+ * @param[in]  aNewThreshold             The new threshold, which may be a default or unchanged code
+ * @param[in]  aDefaultThreshold         The default threshold value
+ */
 void ApplyRouterThreshold(uint8_t &aRouterThresholdReference, uint8_t aNewThreshold, uint8_t aDefaultThreshold);
+
+/**
+ * Apply a Transition Delay value, replacing default codes with default values and ignoring unchanged codes.
+ *
+ * @param[out] aTransitionDelayReference The delay parameter to update
+ * @param[in]  aNewDelay                 The new delay, which may be a default or unchanged code
+ * @param[in]  aDefaultDelay             The default delay value
+ */
 void ApplyTransitionDelayValue(uint16_t &aTransitionDelayReference, uint16_t aNewDelay, uint16_t aDefaultDelay);
 
 } // namespace RouterAdministration

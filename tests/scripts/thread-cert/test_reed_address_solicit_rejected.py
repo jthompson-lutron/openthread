@@ -76,11 +76,11 @@ class TestREEDAddressSolicitRejected(thread_cert.TestCase):
 
     def testAddressSolicitRejectedAfterSvrData(self):
         self.nodes[LEADER].start()
-        self.nodes[LEADER].set_router_upgrade_threshold(1)
+        # Note: The leader's upgrade threshold does not need to be modified
         self.simulator.go(config.LEADER_STARTUP_DELAY)
         self.assertEqual(self.nodes[LEADER].get_state(), 'leader')
 
-        self.nodes[REED].set_router_selection_jitter(120)
+        # Note: The default jitter is 120s
         self.nodes[REED].start()
         # set routerupgradethreshold=1 on REED so that it won't send ADDR_SOL.req
         self.nodes[REED].set_router_upgrade_threshold(1)

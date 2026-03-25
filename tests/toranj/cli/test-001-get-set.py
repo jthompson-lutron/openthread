@@ -71,13 +71,9 @@ mode = 'rd'
 node.set_mode(mode)
 verify(node.get_mode() == mode)
 
-threshold = '1'
-node.set_router_upgrade_threshold(threshold)
-verify(node.get_router_upgrade_threshold() == threshold)
-
-jitter = '100'
-node.set_router_selection_jitter(jitter)
-verify(node.get_router_selection_jitter() == jitter)
+profile = 'Preferred'
+node.set_router_administration_profile(profile)
+verify(node.get_router_administration_profile() == profile)
 
 verify(node.get_interface_state() == 'down')
 verify(node.get_state() == 'disabled')

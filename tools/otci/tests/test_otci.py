@@ -569,7 +569,7 @@ class TestOTCI(unittest.TestCase):
         node1.commissioner_add_joiner("TEST123", eui64='*')
 
         node2.ifconfig_up()
-        node2.set_router_administration_to_min_jitter()
+        node2.set_router_selection_jitter(1)
 
         node2.joiner_start("TEST123")
         node2.wait(10, expect_line="Join success")
@@ -620,7 +620,7 @@ class TestOTCI(unittest.TestCase):
             panid=TEST_PANID,
         )
         commissioner.dataset_commit_buffer('active')
-        commissioner.set_router_administration_to_min_jitter()
+        commissioner.set_router_selection_jitter(1)
         commissioner.ifconfig_up()
         commissioner.thread_start()
 
@@ -658,7 +658,7 @@ class TestOTCI(unittest.TestCase):
         logging.info("child1 scan energy: %r", child1.scan_energy())
 
         child1.set_mode('rn')
-        child1.set_router_administration_to_min_jitter()
+        child1.set_router_selection_jitter(1)
 
         child1.joiner_start('TEST123')
         logging.info('joiner id = %r', child1.get_joiner_id())
@@ -686,7 +686,7 @@ class TestOTCI(unittest.TestCase):
 
         child2.ifconfig_up()
         child2.set_mode('rn')
-        child2.set_router_administration_to_min_jitter()
+        child2.set_router_selection_jitter(1)
 
         child2.joiner_start('TEST123')
         logging.info('joiner id = %r', child2.get_joiner_id())

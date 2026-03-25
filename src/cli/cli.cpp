@@ -5968,47 +5968,62 @@ exit:
 template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
 {
     otError                  error          = OT_ERROR_NONE;
-    static const char *const kProfileName[] = {"Ineligible", "Default",   "Preferred",
-                                               "Reluctant",  "MinJitter", "MaxThresholdsMinJitter"};
+    static const char *const kProfileName[] = {"Ineligible", "Default", "Preferred", "Reluctant"};
     static_assert(OT_ROUTER_ADMINISTRATION_INELIGIBLE == 0, "OT_ROUTER_ADMINISTRATION_INELIGIBLE");
-    static_assert(OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER + 1 == sizeof(kProfileName) / sizeof(kProfileName[0]),
+    static_assert(OT_ROUTER_ADMINISTRATION_RELUCTANT + 1 == sizeof(kProfileName) / sizeof(kProfileName[0]),
                   "OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER");
 
     /**
      * @cli routeradmin
      * @code
+     * Done
      * > routeradmin
      * routeradmin profile: Default
-     * routeradmin options:0, parentpriority+1:15, parentpriority-1:15
+     * routeradmin options:0, parentpriorityhigh:15, parentprioritylow:15
      * routeradmin upthreshold:255, updelaymin:65535, updelayjitter:65535
+     * routeradmin downthreshold:255, downdelaymin:65535, downdelayjitter:65535
      * Done
+     * > routeradmin profile
+     * Default
      * @endcode
-     * @cparam routeradmin [@ca{Ineligible}|@ca{Default}|@ca{Preferred}|@ca{Reluctant}}]
+     * @cparam routeradmin [@ca{profile}]
      * @par
      * Get the Router Administration Configuration details.
      */
-    if (aArgs[0].IsEmpty())
+    if (aArgs[0].IsEmpty() || aArgs[1].IsEmpty())
     {
         otRouterAdministrationProfile       profile;
         otRouterAdministrationConfiguration routerAdministration =
             otThreadGetCurrentRouterAdministration(GetInstancePtr());
-        const char *profileName;
+        const char *const profileName =
+            (otThreadGetRouterAdministrationProfile(&routerAdministration, &profile) == OT_ERROR_NONE &&
+             profile <= OT_ROUTER_ADMINISTRATION_RELUCTANT)
+                ? kProfileName[profile]
+                : "Unknown";
 
-        profileName = (otThreadGetRouterAdministrationProfile(&routerAdministration, &profile) == OT_ERROR_NONE &&
-                       profile <= OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER)
-                          ? kProfileName[profile]
-                          : "Unknown";
+        if (aArgs[0].IsEmpty())
+        {
+            // "routeradmin"
+            OutputLine("routeradmin profile: %s", profileName);
+            OutputLine("routeradmin options:%d, parentpriorityhigh:%d, parentprioritylow:%d",
+                       routerAdministration.mRouterAdministrationOptions,
+                       routerAdministration.mParentPriorityHighThreshold,
+                       routerAdministration.mParentPriorityLowThreshold);
+            OutputLine("routeradmin upthreshold:%d, updelaymin:%d, updelayjitter:%d",
+                       routerAdministration.mRouterUpgradeThreshold, routerAdministration.mRouterUpgradeDelayMinimum,
+                       routerAdministration.mRouterUpgradeDelayJitter);
+            OutputLine("routeradmin downthreshold:%d, downdelaymin:%d, downdelayjitter:%d",
+                       routerAdministration.mRouterDowngradeThreshold,
+                       routerAdministration.mRouterDowngradeDelayMinimum,
+                       routerAdministration.mRouterDowngradeDelayJitter);
+        }
+        else
+        {
+            VerifyOrExit(aArgs[0] == "profile", error = kErrorInvalidCommand);
 
-        OutputLine("routeradmin profile: %s", profileName);
-        OutputLine("routeradmin options:%d, parentpriority+1:%d, parentpriority-1:%d",
-                   routerAdministration.mRouterAdministrationOptions, routerAdministration.mParentPriorityThreshold,
-                   routerAdministration.mParentDeprioritizationThreshold);
-        OutputLine("routeradmin upthreshold:%d, updelaymin:%d, updelayjitter:%d",
-                   routerAdministration.mRouterUpgradeThreshold, routerAdministration.mRouterUpgradeDelayMinimum,
-                   routerAdministration.mRouterUpgradeDelayJitter);
-        OutputLine("routeradmin downthreshold:%d, downdelaymin:%d, downdelayjitter:%d",
-                   routerAdministration.mRouterDowngradeThreshold, routerAdministration.mRouterDowngradeDelayMinimum,
-                   routerAdministration.mRouterDowngradeDelayJitter);
+            // "routeradmin profile"
+            OutputLine("%s", profileName);
+        }
     }
     /**
      * @cli routeradmin
@@ -6016,38 +6031,31 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
      * > routeradmin Default
      * Done
      * @endcode
-     * @cparam routeradmin
-     * [@ca{Ineligible}|@ca{Default}|@ca{Preferred}|@ca{Reluctant}|@ca{MinJitter}|@ca{MaxThresholdsMinJitter}]
+     * @cparam routeradmin profile
+     * [@ca{Ineligible}|@ca{Default}|@ca{Preferred}|@ca{Reluctant}]
      * @par
      * Apply the Router Administration by profile name.
      */
-    else if (aArgs[1].IsEmpty())
+    else if (aArgs[2].IsEmpty())
     {
+        VerifyOrExit(aArgs[0] == "profile", error = kErrorInvalidCommand);
+
         // If only one argument is given, match against known profile names to apply
-        if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_INELIGIBLE])
+        if (aArgs[1] == kProfileName[OT_ROUTER_ADMINISTRATION_INELIGIBLE])
         {
             error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_INELIGIBLE);
         }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_DEFAULT])
+        else if (aArgs[1] == kProfileName[OT_ROUTER_ADMINISTRATION_DEFAULT])
         {
             error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_DEFAULT);
         }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_PREFERRED])
+        else if (aArgs[1] == kProfileName[OT_ROUTER_ADMINISTRATION_PREFERRED])
         {
             error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_PREFERRED);
         }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_RELUCTANT])
+        else if (aArgs[1] == kProfileName[OT_ROUTER_ADMINISTRATION_RELUCTANT])
         {
             error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_RELUCTANT);
-        }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MIN_JITTER])
-        {
-            error = otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MIN_JITTER);
-        }
-        else if (aArgs[0] == kProfileName[OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER])
-        {
-            error =
-                otThreadApplyRouterAdministrationProfile(GetInstancePtr(), OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER);
         }
         else
         {
@@ -6074,8 +6082,8 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
      * @par
      * Apply the Router Administration with specified values.
      */
-    else if ((!aArgs[2].IsEmpty() && !aArgs[3].IsEmpty() && !aArgs[4].IsEmpty() && !aArgs[5].IsEmpty() &&
-              !aArgs[6].IsEmpty() && !aArgs[7].IsEmpty() && !aArgs[8].IsEmpty()) &&
+    else if ((!aArgs[1].IsEmpty() && !aArgs[2].IsEmpty() && !aArgs[3].IsEmpty() && !aArgs[4].IsEmpty() &&
+              !aArgs[5].IsEmpty() && !aArgs[6].IsEmpty() && !aArgs[7].IsEmpty() && !aArgs[8].IsEmpty()) &&
              aArgs[9].IsEmpty())
     {
         otRouterAdministrationConfiguration routerAdministration;
@@ -6085,10 +6093,10 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         // Parent Priorities
         SuccessOrExit(error = aArgs[1].ParseAsUint8(parameterU8));
         VerifyOrExit(parameterU8 <= OT_CAPACITY_USED_DEFAULT);
-        routerAdministration.mParentPriorityThreshold = static_cast<otCapacityThreshold>(parameterU8);
+        routerAdministration.mParentPriorityHighThreshold = static_cast<otCapacityThreshold>(parameterU8);
         SuccessOrExit(error = aArgs[2].ParseAsUint8(parameterU8));
         VerifyOrExit(parameterU8 <= OT_CAPACITY_USED_DEFAULT);
-        routerAdministration.mParentDeprioritizationThreshold = static_cast<otCapacityThreshold>(parameterU8);
+        routerAdministration.mParentPriorityLowThreshold = static_cast<otCapacityThreshold>(parameterU8);
 
         // Upgrade
         SuccessOrExit(error = aArgs[3].ParseAsUint8(routerAdministration.mRouterUpgradeThreshold));
@@ -6100,6 +6108,7 @@ template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
         SuccessOrExit(error = aArgs[7].ParseAsUint16(routerAdministration.mRouterDowngradeDelayMinimum));
         SuccessOrExit(error = aArgs[8].ParseAsUint16(routerAdministration.mRouterDowngradeDelayJitter));
 
+        // Only apply settings if all were successfully parsed
         error = otThreadApplySpecifiedRouterAdministration(GetInstancePtr(), &routerAdministration);
     }
     else

@@ -377,14 +377,29 @@ uint8_t otThreadGetNetworkIdTimeout(otInstance *aInstance);
  */
 void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout);
 
+/**
+ * Set only the ROUTER_UPGRADE_THRESHOLD parameter from the router administration configuration.
+ *
+ * @note This API is reserved for testing and demo purposes only.  For production applications, use
+ * `otThreadApplyRouterAdministrationProfile()` instead for intended router administration profiles.
+ * Changing settings with this API will render a production application non-compliant with the Thread Specification.
+ *
+ * @param[in]  aInstance   A pointer to an OpenThread instance.
+ * @param[in]  aThreshold  The ROUTER_UPGRADE_THRESHOLD value.
+ *
+ * @sa otThreadApplyRouterAdministrationProfile
+ */
+void otThreadSetRouterUpgradeThreshold(otInstance *aInstance, uint8_t aThreshold);
+
 /** Use Managed Upgrade Reason bitmask (default 0 = unmanaged) */
-#define OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK (0x01)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK (0x01)
 /** Router Ineligibility bitmask (default 0 = eligible) */
-#define OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK (0x02)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK (0x02)
 
 #define OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT (0)
-#define OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED (OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK)
-#define OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE (OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE (0xFF)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED (OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK)
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE (OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK)
 
 /**
  * Enumerated thresholds for parent priority thresholds based on capacity utilization.
@@ -436,9 +451,9 @@ typedef struct
 
     // Parent Priorities
     /** The Valid Child capacity threshold for using Parent Priority 1 */
-    otCapacityThreshold mParentPriorityThreshold : 4;
+    otCapacityThreshold mParentPriorityHighThreshold : 4;
     /** The capacity threshold for using Parent Priority -1 */
-    otCapacityThreshold mParentDeprioritizationThreshold : 4;
+    otCapacityThreshold mParentPriorityLowThreshold : 4;
 } otRouterAdministrationConfiguration;
 
 /**
@@ -457,7 +472,7 @@ otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otIns
 /**
  * Set the Router Administration to a specified configuration.
  *
- * @param[in]  aInstance            A pointer to an OpenThread instance.
+ * @param[in]  aInstance      A pointer to an OpenThread instance.
  * @param[in]  aConfiguration The specified Router Administration Configuration.
  *
  * @retval OT_ERROR_NONE         Successfully applied the values.
@@ -470,6 +485,20 @@ otError otThreadApplySpecifiedRouterAdministration(otInstance                   
                                                    const otRouterAdministrationConfiguration *aConfiguration);
 
 /**
+ * Compare two Router Administration configurations.
+ *
+ * @param[in]  aConfiguration A specified Router Administration Configuration.
+ * @param[in]  aOther         Another specified Router Administration Configuration.
+ *
+ * @retval TRUE The configurations match exactly, including strict equality for default or unchanged codes.
+ * @retval FALSE A parameter does not match.
+ *
+ * @sa otThreadGetCurrentRouterAdministration
+ */
+bool otThreadRouterAdministrationConfigurationsDiffer(const otRouterAdministrationConfiguration *aConfiguration,
+                                                      const otRouterAdministrationConfiguration *aOther);
+
+/**
  * Specified Router Administration profiles.
  */
 typedef enum
@@ -478,9 +507,6 @@ typedef enum
     OT_ROUTER_ADMINISTRATION_DEFAULT    = 1, ///< The profile matching the default configuration
     OT_ROUTER_ADMINISTRATION_PREFERRED  = 2, ///< Preferred attempts to upgrade, with parent priority
     OT_ROUTER_ADMINISTRATION_RELUCTANT  = 3, ///< Upgrades only if a child has no other parent options
-    // Test profiles
-    OT_ROUTER_ADMINISTRATION_MIN_JITTER                = 4, ///< Default configuration with minimal jitter
-    OT_ROUTER_ADMINISTRATION_MAX_THRESHOLDS_MIN_JITTER = 5, ///< Default configuration with maxumum thresholds
 } otRouterAdministrationProfile;
 
 /**
@@ -592,6 +618,34 @@ otError otThreadBecomeRouter(otInstance *aInstance);
  *                                 or smaller than current leader's weight, or device is not router eligible.
  */
 otError otThreadBecomeLeader(otInstance *aInstance);
+
+/**
+ * Set only the ROUTER_DOWNGRADE_THRESHOLD parameter from the router administration configuration.
+ *
+ * @note This API is reserved for testing and demo purposes only.  For production applications, use
+ * `otThreadApplyRouterAdministrationProfile()` instead for intended router administration profiles.
+ * Changing settings with this API will render a production application non-compliant with the Thread Specification.
+ *
+ * @param[in]  aInstance   A pointer to an OpenThread instance.
+ * @param[in]  aThreshold  The ROUTER_DOWNGRADE_THRESHOLD value.
+ *
+ * @sa otThreadApplyRouterAdministrationProfile
+ */
+void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThreshold);
+
+/**
+ * Set the upgrade and downgrade transition delay jitter in the router administration configuration.
+ *
+ * @note This API is reserved for testing and demo purposes only.  For production applications, use
+ * `otThreadApplyRouterAdministrationProfile()` instead for intended router administration profiles.
+ * Changing settings with this API will render a production application non-compliant with the Thread Specification.
+ *
+ * @param[in]  aInstance      A pointer to an OpenThread instance.
+ * @param[in]  aRouterJitter  The delay jitter value.
+ *
+ * @sa otThreadApplyRouterAdministrationProfile
+ */
+void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint8_t aRouterJitter);
 
 /**
  * Gets diagnostic information for an attached Child by its Child ID or RLOC16.

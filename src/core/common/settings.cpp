@@ -115,9 +115,9 @@ void SettingsBase::BorderAgentId::Log(Action aAction, const MeshCoP::BorderAgent
 #if OPENTHREAD_FTD
 void SettingsBase::RouterAdministration::Log(Action aAction) const
 {
-    LogInfo("%s RouterAdministration(0) {configuration:0x%02x, parentpriority+1:%d, parentpriority-1:%d",
-            ActionToString(aAction), mRouterAdministrationOptions, mParentPriorityThreshold,
-            mParentDeprioritizationThreshold);
+    LogInfo("%s RouterAdministration(0) {configuration:0x%d, parentpriorityhigh:%d, parentprioritylow:%d",
+            ActionToString(aAction), mRouterAdministrationOptions, mParentPriorityHighThreshold,
+            mParentPriorityLowThreshold);
     LogInfo("%s RouterAdministration(1) {upthreshold:%d, updelaymin:%d, updelayjitter:%d}", ActionToString(aAction),
             mRouterUpgradeThreshold, mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter);
     LogInfo("%s RouterAdministration(2) {downthreshold:%d, downdelaymin:%d, downdelayjitter:%d}",

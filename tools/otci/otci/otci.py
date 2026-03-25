@@ -660,10 +660,6 @@ class OTCI(object):
     # Router configurations
     #
 
-    def set_router_administration_to_min_jitter(self):
-        """Set the routeradmin profile to MinJitter."""
-        self.execute_command('routeradmin MinJitter')
-
     def get_network_id_timeout(self) -> int:
         """Get the NETWORK_ID_TIMEOUT parameter used in the Router role."""
         return self.__parse_int(self.execute_command('networkidtimeout'))
@@ -672,29 +668,29 @@ class OTCI(object):
         """Set the NETWORK_ID_TIMEOUT parameter used in the Router role."""
         self.execute_command(f'networkidtimeout {timeout}')
 
-    def get_parent_priority(self) -> int:
-        """Get the assigned parent priority value, -2 means not assigned."""
-        return self.__parse_int(self.execute_command('parentpriority'))
-
-    def set_parent_priority(self, priority: int):
-        """Set the assigned parent priority value: 1, 0, -1 or -2."""
-        self.execute_command(f'parentpriority {priority}')
-
-    def get_router_upgrade_threshold(self) -> int:
-        """Get the ROUTER_UPGRADE_THRESHOLD value."""
-        return self.__parse_int(self.execute_command('routerupgradethreshold'))
-
     def set_router_upgrade_threshold(self, threshold: int):
-        """Set the ROUTER_UPGRADE_THRESHOLD value."""
-        self.execute_command(f'routerupgradethreshold {threshold}')
+        """Set only the router administration upgrade threshold.
 
-    def get_router_downgrade_threshold(self):
-        """Set the ROUTER_DOWNGRADE_THRESHOLD value."""
-        return self.__parse_int(self.execute_command('routerdowngradethreshold'))
+        Intended for use when only changing the router upgrade threshold.
+        """
+        cmd = f'routeradmin 255 14 14 {threshold} 65534 65534 254 65534 65534'
+        self.execute_command(cmd)
 
     def set_router_downgrade_threshold(self, threshold: int):
-        """Get the ROUTER_DOWNGRADE_THRESHOLD value."""
-        self.execute_command(f'routerdowngradethreshold {threshold}')
+        """Set only the router administration downgrade threshold.
+
+        Intended for use when only changing the router downgrade threshold.
+        """
+        cmd = f'routeradmin 255 14 14 254 65534 65534 {threshold} 65534 65534'
+        self.execute_command(cmd)
+
+    def set_router_selection_jitter(self, jitter: int):
+        """Set only the transition timing jitter of the router administration.
+
+        Intended for use when only changing the transition timing jitter.
+        """
+        cmd = f'routeradmin 255 14 14 254 65534 {jitter} 254 65534 {jitter}'
+        self.execute_command(cmd)
 
     def get_router_eligible(self) -> bool:
         """Indicates whether the router role is enabled or disabled."""

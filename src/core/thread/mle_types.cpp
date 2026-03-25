@@ -277,45 +277,44 @@ void CapacityThreshold::ApplyCapacityThreshold(otCapacityThreshold aNewCapacity,
 
 namespace RouterAdministration {
 
-bool IsDefault(const otRouterAdministrationConfiguration &aRouterAdministration)
+bool IsDefault(const otRouterAdministrationConfiguration &aConfiguration)
 {
     // Verify values match use-default codes or default values
     // The mRouterAdministrationOptions verifies that reserved bits are also in their default state
-    return (aRouterAdministration.mRouterAdministrationOptions == 0 &&
-            (aRouterAdministration.mRouterUpgradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterUpgradeThreshold == kRouterUpgradeThresholdDefault) &&
-            (aRouterAdministration.mRouterDowngradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterDowngradeThreshold == kRouterDowngradeThresholdDefault) &&
-            (aRouterAdministration.mParentPriorityThreshold == OT_CAPACITY_USED_DEFAULT ||
-             aRouterAdministration.mParentPriorityThreshold == CapacityThreshold::kParentPriorityThresholdDefault) &&
-            (aRouterAdministration.mParentDeprioritizationThreshold == OT_CAPACITY_USED_DEFAULT ||
-             aRouterAdministration.mParentPriorityThreshold ==
-                 CapacityThreshold::kParentDeprioritizationThresholdDefault) &&
-            (aRouterAdministration.mRouterUpgradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterUpgradeDelayMinimum == kRouterTransitionMinimumDefault) &&
-            (aRouterAdministration.mRouterUpgradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterUpgradeDelayJitter == kRouterTransitionJitterDefault) &&
-            (aRouterAdministration.mRouterDowngradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterDowngradeDelayMinimum == kRouterTransitionMinimumDefault) &&
-            (aRouterAdministration.mRouterDowngradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
-             aRouterAdministration.mRouterDowngradeDelayJitter == kRouterTransitionJitterDefault));
+    return (aConfiguration.mRouterAdministrationOptions == 0 &&
+            (aConfiguration.mRouterUpgradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterUpgradeThreshold == kRouterUpgradeThresholdDefault) &&
+            (aConfiguration.mRouterDowngradeThreshold == OT_ROUTER_THRESHOLD_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterDowngradeThreshold == kRouterDowngradeThresholdDefault) &&
+            (aConfiguration.mParentPriorityHighThreshold == OT_CAPACITY_USED_DEFAULT ||
+             aConfiguration.mParentPriorityHighThreshold == CapacityThreshold::kParentPriorityHighThresholdDefault) &&
+            (aConfiguration.mParentPriorityLowThreshold == OT_CAPACITY_USED_DEFAULT ||
+             aConfiguration.mParentPriorityHighThreshold == CapacityThreshold::kParentPriorityLowThresholdDefault) &&
+            (aConfiguration.mRouterUpgradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterUpgradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+            (aConfiguration.mRouterUpgradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterUpgradeDelayJitter == kRouterTransitionJitterDefault) &&
+            (aConfiguration.mRouterDowngradeDelayMinimum == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterDowngradeDelayMinimum == kRouterTransitionMinimumDefault) &&
+            (aConfiguration.mRouterDowngradeDelayJitter == OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE ||
+             aConfiguration.mRouterDowngradeDelayJitter == kRouterTransitionJitterDefault));
 }
 
-bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aRouterAdministration,
+bool ConfigurationsDiffer(const otRouterAdministrationConfiguration &aConfiguration,
                           const otRouterAdministrationConfiguration &aOther)
 {
     // mRouterAdministrationOptions ignores differences in reserved bits,
     // so that existing settings will not be overwritten if all other parameters match.
-    return (((aRouterAdministration.mRouterAdministrationOptions & kRouterRoleConfigMask) !=
+    return (((aConfiguration.mRouterAdministrationOptions & kRouterRoleConfigMask) !=
              (aOther.mRouterAdministrationOptions & kRouterRoleConfigMask)) ||
-            (aRouterAdministration.mRouterUpgradeThreshold != aOther.mRouterUpgradeThreshold) ||
-            (aRouterAdministration.mRouterDowngradeThreshold != aOther.mRouterDowngradeThreshold) ||
-            (aRouterAdministration.mParentPriorityThreshold != aOther.mParentPriorityThreshold) ||
-            (aRouterAdministration.mParentDeprioritizationThreshold != aOther.mParentDeprioritizationThreshold) ||
-            (aRouterAdministration.mRouterUpgradeDelayMinimum != aOther.mRouterUpgradeDelayMinimum) ||
-            (aRouterAdministration.mRouterUpgradeDelayJitter != aOther.mRouterUpgradeDelayJitter) ||
-            (aRouterAdministration.mRouterDowngradeDelayMinimum != aOther.mRouterDowngradeDelayMinimum) ||
-            (aRouterAdministration.mRouterDowngradeDelayJitter != aOther.mRouterDowngradeDelayJitter));
+            (aConfiguration.mRouterUpgradeThreshold != aOther.mRouterUpgradeThreshold) ||
+            (aConfiguration.mRouterDowngradeThreshold != aOther.mRouterDowngradeThreshold) ||
+            (aConfiguration.mParentPriorityHighThreshold != aOther.mParentPriorityHighThreshold) ||
+            (aConfiguration.mParentPriorityLowThreshold != aOther.mParentPriorityLowThreshold) ||
+            (aConfiguration.mRouterUpgradeDelayMinimum != aOther.mRouterUpgradeDelayMinimum) ||
+            (aConfiguration.mRouterUpgradeDelayJitter != aOther.mRouterUpgradeDelayJitter) ||
+            (aConfiguration.mRouterDowngradeDelayMinimum != aOther.mRouterDowngradeDelayMinimum) ||
+            (aConfiguration.mRouterDowngradeDelayJitter != aOther.mRouterDowngradeDelayJitter));
 }
 
 template <typename T, T aUnchangedCode, T aDefaultCode>

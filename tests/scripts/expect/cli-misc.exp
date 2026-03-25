@@ -149,12 +149,6 @@ send "joinerport\n"
 expect "10001"
 expect_line "Done"
 
-send "parentpriority 1\n"
-expect_line "Done"
-send "parentpriority\n"
-expect "1"
-expect_line "Done"
-
 send "pollperiod 100000\n"
 expect_line "Done"
 send "pollperiod\n"

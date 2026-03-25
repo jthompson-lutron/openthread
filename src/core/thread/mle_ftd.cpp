@@ -3506,8 +3506,8 @@ otRouterAdministrationConfiguration Mle::GetCurrentRouterAdministration(void)
     using namespace RouterAdministration;
     // Reserved bits are set to 0
     uint8_t RouterAdministrationOptions =
-        ((mUseManagedRouterUpgradeReason ? OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK : 0) |
-         (IsRouterEligible() ? 0 : OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK));
+        ((mUseManagedRouterUpgradeReason ? OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK : 0) |
+         (IsRouterEligible() ? 0 : OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK));
     return otRouterAdministrationConfiguration{
         RouterAdministrationOptions,
         // Upgrade
@@ -3525,9 +3525,8 @@ otRouterAdministrationConfiguration Mle::GetCurrentRouterAdministration(void)
         GetDefaultCodeOrValue(mRouterDowngradeDelayJitter, kRouterTransitionJitterDefault,
                               OT_ROUTER_TRANSITION_DELAY_USE_DEFAULT_CODE),
         // Parent Priorities
-        mParentPriorityThreshold.GetDefaultCodeOrValue(CapacityThreshold::kParentPriorityThresholdDefault),
-        mParentDeprioritizationThreshold.GetDefaultCodeOrValue(
-            CapacityThreshold::kParentDeprioritizationThresholdDefault)};
+        mParentPriorityHighThreshold.GetDefaultCodeOrValue(CapacityThreshold::kParentPriorityHighThresholdDefault),
+        mParentPriorityLowThreshold.GetDefaultCodeOrValue(CapacityThreshold::kParentPriorityLowThresholdDefault)};
 }
 
 Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &aConfiguration)
@@ -3536,9 +3535,9 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     Error error = kErrorNone;
 
     // Parameter Valid Checks
-    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentPriorityThreshold),
+    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentPriorityHighThreshold),
                  error = kErrorInvalidArgs);
-    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentDeprioritizationThreshold),
+    VerifyOrExit(CapacityThreshold::IsValidConfiguration(aConfiguration.mParentPriorityLowThreshold),
                  error = kErrorInvalidArgs);
 
     VerifyOrExit(IsValidThreshold(mRouterUpgradeThreshold), error = kErrorInvalidArgs);
@@ -3556,19 +3555,22 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     VerifyOrExit(aConfiguration.mRouterUpgradeThreshold <= aConfiguration.mRouterDowngradeThreshold,
                  error = kErrorInvalidArgs);
 
-    SuccessOrExit(error = SetRouterEligible(
-                      !(aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_INELIGIBLE_MASK)));
-
     // If successful, apply all values, which may not change if "unchanged" codes are configured
+    if (aConfiguration.mRouterAdministrationOptions != OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE)
+    {
+        // Verify that the router eligibility change succeeds first, if options apply a change
+        SuccessOrExit(error = SetRouterEligible(!(aConfiguration.mRouterAdministrationOptions &
+                                                  OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK)));
 
-    mUseManagedRouterUpgradeReason =
-        aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_MANAGED_ENABLED_MASK;
+        mUseManagedRouterUpgradeReason =
+            aConfiguration.mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLED_MASK;
+    }
 
     // When applying, also check for values to indicate using defaults or unchanged values
-    mParentPriorityThreshold.ApplyCapacityThreshold(aConfiguration.mParentPriorityThreshold,
-                                                    CapacityThreshold::kParentPriorityThresholdDefault);
-    mParentDeprioritizationThreshold.ApplyCapacityThreshold(aConfiguration.mParentDeprioritizationThreshold,
-                                                            CapacityThreshold::kParentDeprioritizationThresholdDefault);
+    mParentPriorityHighThreshold.ApplyCapacityThreshold(aConfiguration.mParentPriorityHighThreshold,
+                                                        CapacityThreshold::kParentPriorityHighThresholdDefault);
+    mParentPriorityLowThreshold.ApplyCapacityThreshold(aConfiguration.mParentPriorityLowThreshold,
+                                                       CapacityThreshold::kParentPriorityLowThresholdDefault);
 
     ApplyRouterThreshold(mRouterUpgradeThreshold, aConfiguration.mRouterUpgradeThreshold,
                          kRouterUpgradeThresholdDefault);
@@ -3827,8 +3829,8 @@ void Mle::DetermineConnectivity(Connectivity &aConnectivity) const
 {
     uint16_t maxChildrenAllowed    = mChildTable.GetMaxChildrenAllowed();
     uint16_t numValidChildren      = mChildTable.GetNumChildren(Child::kInStateValid);
-    uint16_t priorityThreshold     = mParentPriorityThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
-    uint16_t deprioritizeThreshold = mParentDeprioritizationThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
+    uint16_t priorityThreshold     = mParentPriorityHighThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
+    uint16_t deprioritizeThreshold = mParentPriorityLowThreshold.GetThresholdOfMaximum(maxChildrenAllowed);
 
     aConnectivity.Clear();
 
@@ -4145,17 +4147,19 @@ void Mle::RouterRoleTransition::ClearTransition(void)
     mTimeout    = 0;
     mTransition = kNotTransitioning;
 }
-void Mle::RouterRoleTransition::StartDowngradeTransition(uint16_t aRouterDowngradeTransitionDelayMinimum,
-                                                         uint16_t aRouterDowngradeTransitionDelayMaximum)
+void Mle::RouterRoleTransition::StartDowngradeTransition(uint16_t aRouterTransitionMinimum,
+                                                         uint16_t aRouterTransitionJitter)
 {
-    mTimeout    = 1 + Random::NonCrypto::GetUint16InRange(aRouterDowngradeTransitionDelayMinimum,
-                                                          aRouterDowngradeTransitionDelayMaximum);
+    mTimeout    = 1 + Random::NonCrypto::GetUint16InRange(aRouterTransitionMinimum,
+                                                          aRouterTransitionMinimum + aRouterTransitionJitter);
     mTransition = kDowngrading;
 }
 
-void Mle::RouterRoleTransition::StartUpgradeTransition(uint16_t aRouterSelectionJitter)
+void Mle::RouterRoleTransition::StartUpgradeTransition(uint16_t aRouterTransitionMinimum,
+                                                       uint16_t aRouterTransitionJitter)
 {
-    mTimeout    = 1 + Random::NonCrypto::GetUint16InRange(0, aRouterSelectionJitter);
+    mTimeout    = 1 + Random::NonCrypto::GetUint16InRange(aRouterTransitionMinimum,
+                                                          aRouterTransitionMinimum + aRouterTransitionJitter);
     mTransition = kUpgrading;
 }
 

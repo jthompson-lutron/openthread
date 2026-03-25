@@ -42,7 +42,7 @@ import traceback
 import typing
 import unittest
 from ipaddress import IPv6Address, IPv6Network
-from typing import Union, Dict, Optional, List, Any
+from typing import Union, Dict, Optional, List, Literal, Any, get_args
 
 import pexpect
 import pexpect.popen_spawn
@@ -54,6 +54,10 @@ import thread_cert
 PORT_OFFSET = int(os.getenv('PORT_OFFSET', "0"))
 
 INFRA_DNS64 = int(os.getenv('NAT64', 0))
+
+# Test-specific profiles begin with 'Test'
+ROUTER_ADMINISTRATION_PROFILE = Literal["Ineligible", "Default", "Preferred", "Reluctant", "TestMaxThresholds",
+                                        "TestMaxThresholdsLowJitter"]
 
 
 class OtbrDocker:
@@ -1811,11 +1815,6 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_done()
 
-    def set_parent_priority(self, priority):
-        cmd = 'parentpriority %d' % priority
-        self.send_command(cmd)
-        self._expect_done()
-
     def get_partition_id(self):
         self.send_command('partitionid')
         return self._expect_result(r'\d+')
@@ -1885,21 +1884,86 @@ class NodeImpl:
         self.send_command('mac send datarequest')
         self._expect_done()
 
+    def get_router_administration_profile(self) -> ROUTER_ADMINISTRATION_PROFILE:
+        """Get the router administration configuration to a specified profile.
+
+        Supports verifying only the standard API profiles reported over the CLI.
+        """
+        self.send_command('routeradmin')
+        routeradmin_output = self._expect_command_output()
+        assert len(routeradmin_output) == 4
+        profile_match = re.match(r"routeradmin profile: (?P<profile>\w+)", routeradmin_output[0])
+        options_match = re.match(
+            r"routeradmin options:(?P<options>\d+), parentpriorityhigh:(?P<parentpriorityhigh>\d+), "
+            r"parentprioritylow:(?P<parentprioritylow>\d+)", routeradmin_output[1])
+        upgrade_match = re.match(
+            r"routeradmin upthreshold:(?P<upthreshold>\d+), updelaymin:(?P<updelaymin>\d+), "
+            r"updelayjitter:(?P<updelayjitter>\d+)", routeradmin_output[2])
+        downgrade_match = re.match(
+            r"routeradmin downthreshold:(?P<upthreshold>\d+), downdelaymin:(?P<upthreshold>\d+), "
+            r"downdelayjitter:(?P<upthreshold>\d+)", routeradmin_output[3])
+        assert profile_match and options_match and upgrade_match and downgrade_match
+
+        if profile_match.group("profile") in get_args(ROUTER_ADMINISTRATION_PROFILE):
+            # The profile is one of the standard profiles.
+            profile: ROUTER_ADMINISTRATION_PROFILE = profile_match.group("profile")
+        else:
+            # The profile is not one of the standard profiles.  Check if it is one of the test profiles.
+            assert int(options_match.group("options")) == 0  # Default
+            assert int(options_match.group("parentpriorityhigh")) == 15  # Default
+            assert int(options_match.group("parentprioritylow")) == 15  # Default
+            assert int(options_match.group("upthreshold")) == 32  # Custom, Max
+            assert int(options_match.group("updelaymin")) == 65535  # Default
+            assert (updelayjitter := int(options_match.group("updelayjitter"))) == (65535, 3)  # Default or custom
+            assert int(options_match.group("downthreshold")) == 32  # Custom, Max
+            assert int(options_match.group("downdelaymin")) == 65535  # Default
+            assert (downdelayjitter := int(options_match.group("downdelayjitter"))) == (65535, 3)  # Default or custom
+            if updelayjitter == 65535 and downdelayjitter == 65535:
+                profile = "TestMaxThresholds"
+            else:
+                profile = "TestMaxThresholdsLowJitter"
+        return profile
+
+    def set_router_administration_profile(self, profile: ROUTER_ADMINISTRATION_PROFILE):
+        """Set the router administration configuration to a specified profile."""
+        assert profile in get_args(ROUTER_ADMINISTRATION_PROFILE)
+        if profile == "TestMaxThresholds":
+            # Applies defaults for all parameters except the up/downgrade thresholds
+            cmd = 'routeradmin 0 15 15 32 65535 65535 32 65535 65535'
+        elif profile == "TestMaxThresholdsLowJitter":
+            # Applies defaults for all parameters except the up/downgrade thresholds and jitter
+            cmd = 'routeradmin 0 15 15 32 65535 3 32 65535 3'
+        else:
+            cmd = f'routeradmin {profile}'
+        self.send_command(cmd)
+        self._expect_done()
+
     def set_router_upgrade_threshold(self, threshold):
-        """Set only the router administration upgrade threshold."""
-        cmd = f'routeradmin 0 14 14 {threshold} 65534 65534 254 65534 65534'
+        """Set only the router administration upgrade threshold.
+
+        Intended for use when only changing the router upgrade threshold.
+        """
+        cmd = f'routeradmin 255 14 14 {threshold} 65534 65534 254 65534 65534'
         self.send_command(cmd)
         self._expect_done()
 
     def set_router_downgrade_threshold(self, threshold):
-        """Set only the router administration downgrade threshold."""
-        cmd = f'routeradmin 0 14 14 254 65534 65534 {threshold} 65534 65534'
+        """Set only the router administration downgrade threshold.
+
+        Intended for use when only changing the router upgrade threshold.
+        """
+        cmd = f'routeradmin 255 14 14 254 65534 65534 {threshold} 65534 65534'
         self.send_command(cmd)
         self._expect_done()
 
-    def get_router_downgrade_threshold(self) -> int:
-        self.send_command('routerdowngradethreshold')
-        return int(self._expect_result(r'\d+'))
+    def set_router_selection_jitter(self, jitter):
+        """Set only the transition timing jitter of the router administration.
+
+        Intended for use when only changing the transition timing jitter.
+        """
+        cmd = f'routeradmin 255 14 14 254 65534 {jitter} 254 65534 {jitter}'
+        self.send_command(cmd)
+        self._expect_done()
 
     def set_router_eligible(self, enable: bool):
         cmd = f'routereligible {"enable" if enable else "disable"}'
@@ -2690,12 +2754,6 @@ class NodeImpl:
 
         if self.is_otbr:
             self.set_log_level(5)
-
-    def set_router_selection_jitter(self, jitter):
-        """Set only the transition timing jitter of the router administration."""
-        cmd = f'routeradmin 0 14 14 254 65534 {jitter} 254 65534 {jitter}'
-        self.send_command(cmd)
-        self._expect_done()
 
     def set_active_dataset(
         self,
