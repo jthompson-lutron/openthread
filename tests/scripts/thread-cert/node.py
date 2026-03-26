@@ -56,7 +56,8 @@ PORT_OFFSET = int(os.getenv('PORT_OFFSET', "0"))
 INFRA_DNS64 = int(os.getenv('NAT64', 0))
 
 # Test-specific profiles begin with 'Test'
-ROUTER_ADMINISTRATION_PROFILE = Literal["Ineligible", "Default", "Preferred", "Reluctant", "TestMaxThresholdsLowJitter"]
+ROUTER_ADMINISTRATION_PROFILE = Literal["Ineligible", "Default", "Preferred", "Reluctant",
+                                        "TestMaxThresholdsLowJitter"]
 
 
 class OtbrDocker:
@@ -1929,7 +1930,7 @@ class NodeImpl:
             # Applies defaults for all parameters except the up/downgrade thresholds and jitter
             cmd = 'routeradmin 1 15 15 32 65535 1 32 65535 1'
         else:
-            cmd = f'routeradmin {profile}'
+            cmd = f'routeradmin profile {profile}'
         self.send_command(cmd)
         self._expect_done()
 
