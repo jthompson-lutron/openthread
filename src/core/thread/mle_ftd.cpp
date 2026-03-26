@@ -3586,6 +3586,8 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     ApplyTransitionDelayValue(mRouterDowngradeDelayJitter, aConfiguration.mRouterDowngradeDelayJitter,
                               kRouterTransitionJitterDefault);
 
+    // Ensure the new configuration will be stored
+    Get<Notifier>().Signal(kEventThreadRoleChanged);
 exit:
     return error;
 }

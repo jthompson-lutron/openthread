@@ -102,7 +102,7 @@ class TestMlr(thread_cert.TestCase):
             'name': 'FED',
             'allowlist': [ROUTER],
             'version': '1.2',
-            'router_upgrade_threshold': 0,
+            'router_administration_profile': 'TestReluctant',
         },
         MED: {
             'name': 'MED',

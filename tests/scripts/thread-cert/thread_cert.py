@@ -68,7 +68,7 @@ DEFAULT_PARAMS = {
 
 FTD_DEFAULT_PARAMS = {
     'is_ftd': True,
-    'router_selection_jitter': config.DEFAULT_ROUTER_SELECTION_JITTER,
+    'router_administration_profile': 'TestDefault',
 }
 
 EXTENDED_ADDRESS_BASE = 0x166e0a0000000000
@@ -193,7 +193,7 @@ class TestCase(NcpSupportMixin, unittest.TestCase):
                 self.nodes[i].set_preferred_partition_id(params['partition_id'])
 
             if params['is_ftd']:
-                self.nodes[i].set_router_selection_jitter(params['router_selection_jitter'])
+                self.nodes[i].set_router_administration_profile(params['router_administration_profile'])
 
             if 'router_administration_profile' in params:
                 self.nodes[i].set_router_administration_profile(params['router_administration_profile'])

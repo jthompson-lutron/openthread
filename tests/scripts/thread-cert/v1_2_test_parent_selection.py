@@ -73,22 +73,29 @@ class TestParentSelection(thread_cert.TestCase):
     TOPOLOGY = {
         LEADER_1_2: {
             'version': '1.2',
+            # Routers begin with test defaults, but are set to TestPreferred when using parent priority
             'allowlist': [REED_1_2, ROUTER_1_2, REED_1_1, ROUTER_1_1, MED_1_1],
         },
         ROUTER_1_1: {
             'version': '1.1',
+            # Routers begin with test defaults, but are set to TestPreferred when using parent priority
             'allowlist': [LEADER_1_2, REED_1_2, MED_1_2, MED_1_1],
         },
         REED_1_2: {
             'version': '1.2',
+            # REEDs using the TestReluctant profile should not upgrade during the test
+            'router_administration_profile': 'TestReluctant',
             'allowlist': [ROUTER_1_2, ROUTER_1_1, LEADER_1_2],
         },
         ROUTER_1_2: {
             'version': '1.2',
+            # Routers begin with test defaults, but are set to TestPreferred when using parent priority
             'allowlist': [REED_1_2, MED_1_2, REED_1_1, LEADER_1_2],
         },
         REED_1_1: {
             'version': '1.1',
+            # REEDs using the TestReluctant profile should not upgrade during the test
+            'router_administration_profile': 'TestReluctant',
             'allowlist': [ROUTER_1_2, LEADER_1_2]
         },
         MED_1_1: {
@@ -110,7 +117,6 @@ class TestParentSelection(thread_cert.TestCase):
         self.simulator.go(config.LEADER_STARTUP_DELAY)
         self.assertEqual(self.nodes[LEADER_1_2].get_state(), 'leader')
 
-        self.nodes[ROUTER_1_1].set_router_selection_jitter(1)
         self.nodes[ROUTER_1_1].start()
         self.simulator.go(config.ROUTER_STARTUP_DELAY)
         self.assertEqual(self.nodes[ROUTER_1_1].get_state(), 'router')
@@ -123,8 +129,6 @@ class TestParentSelection(thread_cert.TestCase):
         self.flush_nodes([LEADER_1_2, ROUTER_1_1])
 
         self.nodes[LEADER_1_2].set_link_quality(self.nodes[REED_1_2].get_addr64(), 2)
-        self.nodes[REED_1_2].set_router_selection_jitter(1)
-        self.nodes[REED_1_2].set_router_upgrade_threshold(1)
         self.nodes[REED_1_2].start()
         self.simulator.go(5)
         self.assertEqual(self.nodes[REED_1_2].get_state(), 'child')
@@ -189,9 +193,8 @@ class TestParentSelection(thread_cert.TestCase):
         # Flush relative message queues
         self.flush_nodes([LEADER_1_2, ROUTER_1_2])
 
-        self.nodes[ROUTER_1_2].set_parent_priority(1)
-        self.nodes[REED_1_1].set_router_selection_jitter(1)
-        self.nodes[REED_1_1].set_router_upgrade_threshold(1)
+        # The TestPreferred profile will use higher parent priority for child counts in the network tested
+        self.nodes[ROUTER_1_2].set_router_administration_profile('TestPreferred')
         self.nodes[REED_1_1].start()
         self.simulator.go(5)
         self.assertEqual(self.nodes[REED_1_1].get_state(), 'child')
@@ -264,7 +267,8 @@ class TestParentSelection(thread_cert.TestCase):
         # Flush relative message queues
         self.flush_nodes([ROUTER_1_2, ROUTER_1_1])
 
-        self.nodes[ROUTER_1_1].set_parent_priority(1)
+        # The TestPreferred profile will use higher parent priority for child counts in the network tested
+        self.nodes[ROUTER_1_1].set_router_administration_profile('TestPreferred')
         self.nodes[MED_1_2].start()
         self.simulator.go(15)
         self.assertEqual(self.nodes[MED_1_2].get_state(), 'child')

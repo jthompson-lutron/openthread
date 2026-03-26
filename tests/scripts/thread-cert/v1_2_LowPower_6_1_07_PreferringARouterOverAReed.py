@@ -62,7 +62,7 @@ class LowPower_6_1_07_PreferringARouterOverAReed_Base(thread_cert.TestCase):
             'version': '1.2',
             'name': 'REED_1',
             'mode': 'rdn',
-            'router_upgrade_threshold': 0,
+            'router_administration_profile': 'TestReluctant',
             'allowlist': [LEADER, DUT],
         },
         DUT: {

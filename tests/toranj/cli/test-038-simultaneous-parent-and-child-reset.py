@@ -66,6 +66,7 @@ router.allowlist_node(child)
 
 leader.form('reset')
 router.join(leader)
+router.log_router_administration()
 child.join(leader, cli.JOIN_TYPE_END_DEVICE)
 
 verify(leader.get_state() == 'leader')
@@ -84,6 +85,7 @@ verify(int(child.get_parent_info()['Rloc'], 16) == router_rloc)
 
 del router
 router = cli.Node(index=2)
+router.log_router_administration()
 router.interface_up()
 router.thread_start()
 

@@ -31,14 +31,12 @@ import sys
 import os
 import time
 import re
-import random
-import string
-import subprocess
 import pexpect
 import pexpect.popen_spawn
-import signal
 import inspect
 import weakref
+
+from typing import Literal, get_args
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Constants
@@ -52,6 +50,8 @@ JOIN_TYPE_REED = 'reed'
 RADIO_15_4 = "-15.4"
 RADIO_TREL = "-trel"
 RADIO_15_4_TREL = "-15.4-trel"
+
+ROUTER_ADMINISTRATION_PROFILE = Literal['Ineligible', 'Default', 'Preferred', 'Reluctant']
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -271,6 +271,30 @@ class Node(object):
 
     def set_panid(self, panid):
         self._cli_no_output('panid', panid)
+
+    def log_router_administration(self) -> None:
+        """Get the router administration configuration to a specified profile.
+
+        Supports verifying only the standard API profiles reported over the CLI.
+
+        Note: Asserts that the result is one of the test profiles.
+        """
+        outputs = self.cli('routeradmin')
+        assert len(outputs) == 4
+
+    def get_router_administration_profile(self) -> ROUTER_ADMINISTRATION_PROFILE:
+        """Get the router administration configuration to a specified profile.
+
+        Supports verifying only the standard API profiles reported over the CLI.
+
+        Note: Asserts that the result is one of the test profiles.
+        """
+        return self._cli_single_output('routeradmin profile')
+
+    def set_router_administration_profile(self, profile: ROUTER_ADMINISTRATION_PROFILE):
+        """Set the router administration configuration to a specified profile."""
+        assert profile in get_args(ROUTER_ADMINISTRATION_PROFILE)
+        self._cli_no_output('routeradmin', 'profile', profile)
 
     def set_router_selection_jitter(self, jitter: int):
         """Set only the transition timing jitter of the router administration.
@@ -921,6 +945,7 @@ class Node(object):
             self.set_router_eligible('disable')
         else:
             self.set_mode('rdn')
+            self.set_router_administration_profile('Default')
             self.set_router_selection_jitter(1)
         self.interface_up()
         self.thread_start()
