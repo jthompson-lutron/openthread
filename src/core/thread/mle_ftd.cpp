@@ -126,6 +126,9 @@ Error Mle::SetRouterEligible(bool aEligible)
 
     mRouterEligible = aEligible;
 
+    // Ensure the new configuration will be stored, to persist after a reset
+    Get<Notifier>().Signal(kEventThreadRoleChanged);
+
     // Clear the role transition state if eligibility has changed
     mRouterRoleTransition.ClearTransition();
 
@@ -3586,7 +3589,7 @@ Error Mle::ApplyRouterAdministration(const otRouterAdministrationConfiguration &
     ApplyTransitionDelayValue(mRouterDowngradeDelayJitter, aConfiguration.mRouterDowngradeDelayJitter,
                               kRouterTransitionJitterDefault);
 
-    // Ensure the new configuration will be stored
+    // Ensure the new configuration will be stored, to persist after a reset
     Get<Notifier>().Signal(kEventThreadRoleChanged);
 exit:
     return error;
