@@ -960,7 +960,7 @@ class Node(object):
             self.set_router_eligible('disable')
         else:
             self.set_mode('rdn')
-            self.set_router_administration_profile('Default')
+            # This will result in an additional record in the `history netinfo`.
             self.set_router_selection_jitter(1)
         self.interface_up()
         self.thread_start()

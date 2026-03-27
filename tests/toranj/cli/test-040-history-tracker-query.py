@@ -27,9 +27,7 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 
 from cli import verify
-from cli import verify_within
 import cli
-import time
 
 # -----------------------------------------------------------------------------------------------------------------------
 # Test description: History Tracker client/server behavior
@@ -68,7 +66,9 @@ r2_rlco16 = int(r2.get_rloc16(), 16)
 
 local_table = r2.cli('history netinfo')
 
-verify(len(local_table) == 5)
+# Note: The router joining the leader will add an entry in the history,
+# due to one instance of test settings being stored
+verify(len(local_table) == 6)
 local_table = local_table[2:]
 
 # Remove the age field from the table
@@ -80,7 +80,7 @@ for i in range(3):
 
 table = r1.cli('history query netinfo', r2_rlco16)
 
-verify(len(table) == 5)
+verify(len(table) == 6)  # Should match the check on r2's local_table above
 table = table[2:]
 for i in range(3):
     verify(table[i].endswith(local_table[i]))
@@ -90,19 +90,19 @@ for i in range(3):
 
 # Test query with the 'list' format
 result = r1.cli('history query netinfo list', r2_rlco16)
-verify(len(result) == 3)
+verify(len(result) == 4)  # Similar to r2 checks above, but doesn't have 2 CLI header lines
 
 # Test specifying max entries as 2
 table = r1.cli('history query netinfo', r2_rlco16, 2)
-verify(len(table) == 4)
+verify(len(table) == 4)  # 2 header rows + 2 specified rows
 
 # Test specifying max entries as 10
 table = r1.cli('history query netinfo', r2_rlco16, 10)
-verify(len(table) == 5)
+verify(len(table) == 6)
 
 # Test specifying max entry age as zero (no age limit)
 table = r1.cli('history query netinfo', r2_rlco16, 0, 0)
-verify(len(table) == 5)
+verify(len(table) == 6)
 
 # Test specifying max entry age as 1 millisecond
 table = r1.cli('history query netinfo', r2_rlco16, 0, 1)
