@@ -174,9 +174,12 @@ enum Command : uint8_t
 };
 
 /**
- * Represents the reason to attempt to upgrade to router role (used in `BecomeRouter()`).
+ * Represents the legacy reason to attempt to upgrade to router role sent in the Status TLV of Address Solicit
+ * Requests.
  *
  * The enumeration values correspond to the status values in `ThreadStatusTlv` in a TMF Address Solicit Request message.
+ *
+ * @sa RouterUpgradeReasonDetail
  */
 enum RouterUpgradeReason : uint8_t
 {
@@ -185,6 +188,21 @@ enum RouterUpgradeReason : uint8_t
     kReasonParentPartitionChange = 4, ///< Parent Partition change.
     kReasonBorderRouterRequest   = 5, ///< Device is Border Router.
 };
+
+/**
+ * Bitmap of reasons to attempt to upgrade to router role (used in `BecomeRouter()`) and sent in the
+ * RouterUpgradeReasonDetail TLV of Address Solicit Requests.
+ *
+ * Note: This currently matches the same codes in RouterUpgradeReason, but is intended for expansion in future updates.
+ *
+ * @sa RouterUpgradeReason
+ */
+typedef uint8_t                     RouterUpgradeReasonDetail;
+constexpr RouterUpgradeReasonDetail kUpgradeDetailNone                      = 0x00;
+constexpr RouterUpgradeReasonDetail kUpgradeDetailTooFewRoutersMask         = 0x01; ///< Too few routers.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailHaveChildIdRequestMask    = 0x02; ///< Have pending Child ID Request.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailParentPartitionChangeMask = 0x04; ///< Parent during Partition change.
+constexpr RouterUpgradeReasonDetail kUpgradeDetailBorderRouterRequestMask   = 0x08; ///< Border Router.
 
 /**
  * Specifies the leader role start mode.
