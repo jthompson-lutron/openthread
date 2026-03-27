@@ -29,7 +29,6 @@
 from cli import verify
 from cli import verify_within
 import cli
-import time
 
 # -----------------------------------------------------------------------------------------------------------------------
 # Test description:
@@ -67,6 +66,7 @@ router.allowlist_node(child)
 leader.form('reset')
 router.join(leader)
 router.log_router_administration()
+child.set_router_eligible('disable')
 child.join(leader, cli.JOIN_TYPE_END_DEVICE)
 
 verify(leader.get_state() == 'leader')
@@ -91,7 +91,7 @@ router.thread_start()
 
 del child
 child = cli.Node(index=3)
-child.set_router_eligible('disable')
+child.log_router_administration()
 child.interface_up()
 child.thread_start()
 

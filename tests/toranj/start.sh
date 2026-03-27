@@ -131,13 +131,15 @@ else
     coverage_option=""
 fi
 
+: "${python_executable_path:=}"
+
 if [ "$TORANJ_CLI" = 1 ]; then
     app_name="cli"
-    python_app="python3"
+    python_app="${python_executable_path}python3"
     log_file_name="ot-logs"
 else
     app_name="ncp"
-    python_app="python2"
+    python_app="${python_executable_path}python2"
     log_file_name="wpantund-logs"
 fi
 

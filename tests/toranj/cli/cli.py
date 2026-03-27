@@ -118,22 +118,37 @@ class Node(object):
         """Creates a new `Node` instance"""
 
         if index is None:
-            index = Node._cur_index
+            self._index = Node._cur_index
             Node._cur_index += 1
+        else:
+            self._index = index
 
-        self._index = index
         self._verbose = verbose
 
         cmd = f'{self._OT_CLI_FTD}{radios} --time-speed={self._SPEED_UP_FACTOR} '
 
         if Node._SAVE_LOGS:
-            log_file_name = self._LOG_FNAME + str(index) + '.log'
-            cmd = cmd + f'--log-file={log_file_name} '
+            log_file_base_name = f'{self._LOG_FNAME}{self._index}'
+            main_log_file_name = f'{log_file_base_name}.log'
+            cmd = f'{cmd}--log-file={main_log_file_name} '
+
+            previous_log_file_name = os.path.abspath(f'{log_file_base_name}.previous.log')
+            if index is None and os.path.exists(previous_log_file_name):
+                # Clear the previous log when this node is created without a specified index
+                _log(f"Clearing previous logs: {previous_log_file_name}")
+                open(previous_log_file_name, 'w').close()
+            elif index is not None and os.path.exists(main_log_file_name):
+                # Save a pre-existing log when re-initialized with an index
+                _log(f"Saving previous logs to: {previous_log_file_name}")
+                with open(previous_log_file_name, "a") as previous_log_file:
+                    previous_log_file.write('\n\n')
+                    with open(main_log_file_name, 'r') as main_log_file:
+                        previous_log_file.writelines(main_log_file.readlines())
 
         cmd = cmd + f'{self._index}'
 
         if self._verbose:
-            _log(f'$ Node{index}.__init__() cmd: `{cmd}`')
+            _log(f'$ Node{self._index}.__init__() cmd: `{cmd}`')
 
         self._cli_process = pexpect.popen_spawn.PopenSpawn(cmd)
         Node._all_nodes.add(self)
