@@ -369,7 +369,7 @@ void Test7_1_6(void)
      */
 
     SuccessOrQuit(router1.Get<Mle::Mle>().SetRouterEligible(true));
-    SuccessOrQuit(router1.Get<Mle::Mle>().BecomeRouter(Mle::kReasonTooFewRouters));
+    SuccessOrQuit(router1.Get<Mle::Mle>().BecomeRouter(Mle::kUpgradeReasonTooFewRouters));
     nexus.AdvanceTime(kStabilizationTime);
 
     {

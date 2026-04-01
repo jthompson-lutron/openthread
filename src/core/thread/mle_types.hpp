@@ -173,17 +173,22 @@ enum Command : uint8_t
     kCommandP2pLinkTearDown               = 103, ///< P2P Link Tear Down command
 };
 
+typedef uint8_t RouterUpgradeReasonFlags;
+
 /**
- * Represents the reason to attempt to upgrade to router role (used in `BecomeRouter()`).
+ * Bitmap of reasons to attempt to upgrade to router role (used in `BecomeRouter()`) and sent in the
+ * RouterUpgradeReasonDetailTlv of Address Solicit Requests.
  *
- * The enumeration values correspond to the status values in `ThreadStatusTlv` in a TMF Address Solicit Request message.
+ * @sa RouterUpgradeStatusTlvReason
+ * @sa RouterUpgradeReasonDetailTlv
  */
-enum RouterUpgradeReason : uint8_t
+enum RouterUpgradeReasonFlagEnum : uint8_t
 {
-    kReasonTooFewRouters         = 2, ///< Too few routers.
-    kReasonHaveChildIdRequest    = 3, ///< Have pending Child ID Request.
-    kReasonParentPartitionChange = 4, ///< Parent Partition change.
-    kReasonBorderRouterRequest   = 5, ///< Device is Border Router.
+    kUpgradeReasonNone                  = 0x00,      ///< No Upgrade reasons are pending
+    kUpgradeReasonTooFewRouters         = (1U << 0), ///< Too few routers
+    kUpgradeReasonHaveChildIdRequest    = (1U << 1), ///< Pending Child ID Request
+    kUpgradeReasonParentPartitionChange = (1U << 2), ///< Parent Partition change
+    kUpgradeReasonBorderRouterRequest   = (1U << 3), ///< Border Router
 };
 
 /**

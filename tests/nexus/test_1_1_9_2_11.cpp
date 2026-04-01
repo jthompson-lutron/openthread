@@ -207,12 +207,12 @@ void Test9_2_11(void)
     commissioner.Join(leader);
     nexus.AdvanceTime(kJoinTime);
     VerifyOrQuit(commissioner.Get<Mle::Mle>().IsAttached());
-    SuccessOrQuit(commissioner.Get<Mle::Mle>().BecomeRouter(Mle::kReasonTooFewRouters));
+    SuccessOrQuit(commissioner.Get<Mle::Mle>().BecomeRouter(Mle::kUpgradeReasonTooFewRouters));
 
     router1.Join(leader);
     nexus.AdvanceTime(kJoinTime);
     VerifyOrQuit(router1.Get<Mle::Mle>().IsAttached());
-    SuccessOrQuit(router1.Get<Mle::Mle>().BecomeRouter(Mle::kReasonTooFewRouters));
+    SuccessOrQuit(router1.Get<Mle::Mle>().BecomeRouter(Mle::kUpgradeReasonTooFewRouters));
 
     nexus.AdvanceTime(kFormNetworkTime);
     VerifyOrQuit(commissioner.Get<Mle::Mle>().IsRouter());

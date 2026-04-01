@@ -206,6 +206,12 @@ private:
 
     void AddDomainUnicastAddress(void);
     void RemoveDomainUnicastAddress(void);
+
+    /**
+     * Update the registration delay with a delay up to max 255 seconds.
+     *
+     * @param[in] aDelay The delay to update in the range 0-255 seconds.
+     */
     void UpdateRegistrationDelay(uint8_t aDelay);
 #endif
 

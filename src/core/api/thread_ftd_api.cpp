@@ -176,7 +176,7 @@ exit:
 
 otError otThreadBecomeRouter(otInstance *aInstance)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().BecomeRouter(Mle::kReasonHaveChildIdRequest);
+    return AsCoreType(aInstance).Get<Mle::Mle>().BecomeRouter(Mle::kUpgradeReasonHaveChildIdRequest);
 }
 
 otError otThreadBecomeLeader(otInstance *aInstance)
@@ -196,12 +196,15 @@ void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThresho
 
 uint8_t otThreadGetRouterSelectionJitter(otInstance *aInstance)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetRouterSelectionJitter();
+    uint16_t routerSelectionJitter = AsCoreType(aInstance).Get<Mle::Mle>().GetRouterSelectionJitter();
+    return (routerSelectionJitter > OT_API_MAX_ROUTER_SELECTION_JITTER) ? OT_API_MAX_ROUTER_SELECTION_JITTER
+                                                                        : static_cast<uint8_t>(routerSelectionJitter);
 }
 
 void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint8_t aRouterJitter)
 {
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterSelectionJitter(aRouterJitter);
+    // Values within a uint8_t range should not cause errors, so they are ignored to maintain backwards compatibility
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().SetRouterSelectionJitter(aRouterJitter));
 }
 
 otError otThreadGetChildInfoById(otInstance *aInstance, uint16_t aChildId, otChildInfo *aChildInfo)

@@ -57,20 +57,21 @@ public:
      */
     enum Type : uint8_t
     {
-        kTarget                = 0,  ///< Target EID TLV
-        kExtMacAddress         = 1,  ///< Extended MAC Address TLV
-        kRloc16                = 2,  ///< RLOC16 TLV
-        kMeshLocalEid          = 3,  ///< ML-EID TLV
-        kStatus                = 4,  ///< Status TLV
-        kLastTransactionTime   = 6,  ///< Time Since Last Transaction TLV
-        kRouterMask            = 7,  ///< Router Mask TLV
-        kNdOption              = 8,  ///< ND Option TLV
-        kNdData                = 9,  ///< ND Data TLV
-        kThreadNetworkData     = 10, ///< Thread Network Data TLV
-        kTimeout               = 11, ///< Timeout TLV
-        kNetworkName           = 12, ///< Network Name TLV
-        kIp6Addresses          = 14, ///< IPv6 Addresses TLV
-        kCommissionerSessionId = 15, ///< Commissioner Session ID TLV
+        kTarget                    = 0,  ///< Target EID TLV
+        kExtMacAddress             = 1,  ///< Extended MAC Address TLV
+        kRloc16                    = 2,  ///< RLOC16 TLV
+        kMeshLocalEid              = 3,  ///< ML-EID TLV
+        kStatus                    = 4,  ///< Status TLV
+        kLastTransactionTime       = 6,  ///< Time Since Last Transaction TLV
+        kRouterMask                = 7,  ///< Router Mask TLV
+        kNdOption                  = 8,  ///< ND Option TLV
+        kNdData                    = 9,  ///< ND Data TLV
+        kThreadNetworkData         = 10, ///< Thread Network Data TLV
+        kTimeout                   = 11, ///< Timeout TLV
+        kNetworkName               = 12, ///< Network Name TLV
+        kIp6Addresses              = 14, ///< IPv6 Addresses TLV
+        kCommissionerSessionId     = 15, ///< Commissioner Session ID TLV
+        kRouterUpgradeReasonDetail = 16, ///< Router Upgrade Reason Detail TLV
     };
 
     /**
@@ -135,6 +136,13 @@ typedef UintTlvInfo<ThreadTlv::kCommissionerSessionId, uint16_t> ThreadCommissio
  * The definition of Status values in this TLV depends on the TMF message in which it is used.
  */
 typedef UintTlvInfo<ThreadTlv::kStatus, uint8_t> ThreadStatusTlv;
+
+/**
+ * Defines Router Upgrade Reason Detail TLV bitmap.
+ *
+ * Additional Status detail bitmap for use with Address Solicit requests.
+ */
+typedef UintTlvInfo<ThreadTlv::kRouterUpgradeReasonDetail, uint8_t> RouterUpgradeReasonDetailTlv;
 
 /**
  * Implements Router Mask TLV generation and parsing.
