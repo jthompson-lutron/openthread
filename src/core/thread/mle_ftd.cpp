@@ -215,8 +215,7 @@ Error Mle::BecomeRouter(RouterUpgradeReasonFlags aReasonFlags)
 
     VerifyOrExit(IsRouterEligible(), error = kErrorNotCapable);
 
-    LogInfo("Attempt to become router, reason:%s (0x%02x)", RouterUpgradeReasonFlagsToString(aReasonFlags),
-            aReasonFlags);
+    LogInfo("Attempt to become router, reason flags: (0x%02x)", aReasonFlags);
 
     Get<MeshForwarder>().SetRxOnWhenIdle(true);
 
@@ -3371,6 +3370,9 @@ Error Mle::SendAddressSolicit(RouterUpgradeReasonFlags aReasonFlags)
         ExitNow(error = kErrorInvalidArgs);
     }
 
+    LogInfo("Sending AddrSolicit with Reason: %s (flags: 0x%02x)",
+            RouterUpgradeStatusTlvReasonToString(statusTlvReason), aReasonFlags);
+
     message = Get<Tmf::Agent>().AllocateAndInitPriorityConfirmablePostMessage(kUriAddressSolicit);
     VerifyOrExit(message != nullptr, error = kErrorNoBufs);
 
@@ -3598,7 +3600,11 @@ Error Mle::AddrSolicitInfo::ParseFrom(const Coap::Msg &aMsg)
 
     SuccessOrExit(error = Tlv::Find<ThreadExtMacAddressTlv>(aMsg.mMessage, mExtAddress));
     SuccessOrExit(error = Tlv::Find<ThreadStatusTlv>(aMsg.mMessage, mReason));
-    // Note: RouterUpgradeReasonDetailTlv may optionally exist, but is currently ignored
+    // mReasonDetailFlags may be omitted
+    if (Tlv::Find<RouterUpgradeReasonDetailTlv>(aMsg.mMessage, mReasonDetailFlags) != kErrorNone)
+    {
+        mReasonDetailFlags = kUpgradeReasonNone;
+    }
 
     switch (Tlv::Find<ThreadRloc16Tlv>(aMsg.mMessage, mRequestedRloc16))
     {
@@ -3636,7 +3642,10 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
     aInfo.mResponse = kAddrSolicitNoAddressAvailable;
     aInfo.mRouter   = nullptr;
 
-    LogInfo("AddrSolicit Reason: %s", RouterUpgradeReasonFlagsToString(aInfo.mReason));
+    LogInfo(
+        "Received AddrSolicit Reason: %s (flags: 0x%02x)",
+        RouterUpgradeStatusTlvReasonToString(static_cast<AddrSolicitInfo::RouterUpgradeStatusTlvReason>(aInfo.mReason)),
+        aInfo.mReasonDetailFlags);
 
     if (aInfo.mRequestedRloc16 != kInvalidRloc16)
     {
@@ -4092,27 +4101,28 @@ exit:
 
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
 
-const char *Mle::RouterUpgradeReasonFlagsToString(RouterUpgradeReasonFlags aReasonFlags)
+const char *Mle::RouterUpgradeStatusTlvReasonToString(AddrSolicitInfo::RouterUpgradeStatusTlvReason aStatusReasonFlag)
 {
-    const char *str = "Unknown";
+    const char *str;
 
     // The string logged will be the first matched if multiple bits are set
-    if ((aReasonFlags & kUpgradeReasonHaveChildIdRequest) != 0)
+    switch (aStatusReasonFlag)
     {
+    case AddrSolicitInfo::kReasonStatusTlvHaveChildIdRequest:
         str = "HaveChildIdRequest";
-    }
-    else if ((aReasonFlags & kUpgradeReasonParentPartitionChange) != 0)
-    {
+        break;
+    case AddrSolicitInfo::kReasonStatusTlvParentPartitionChange:
         str = "ParentPartitionChange";
-    }
-    else if ((aReasonFlags & kUpgradeReasonBorderRouterRequest) != 0)
-    {
+        break;
+    case AddrSolicitInfo::kReasonStatusTlvBorderRouterRequest:
         str = "BorderRouterRequest";
-    }
-    else if ((aReasonFlags & kUpgradeReasonTooFewRouters) != 0)
-    {
+        break;
+    case AddrSolicitInfo::kReasonStatusTlvTooFewRouters:
         // Only used if no other bits are set.
         str = "TooFewRouters";
+        break;
+    default:
+        str = "Unknown";
     }
 
     return str;
@@ -4139,12 +4149,17 @@ void Mle::RouterRoleTransition::StartTransition(uint16_t   aRouterTransitionMini
                                                 uint16_t   aRouterTransitionJitter,
                                                 Transition aTransitionType)
 {
-    uint16_t minimumDelay = Min<uint16_t>(aRouterTransitionMinimum, kRouterTransitionDelayMax - 1);
-    uint16_t jitter       = Min<uint16_t>(aRouterTransitionJitter, kRouterTransitionDelayMax);
-    // maximumDelay will be at least 1 more than minimumDelay
-    uint16_t maximumDelay = Min<uint16_t>(minimumDelay + jitter + 1, kRouterTransitionDelayMax);
-
-    mTimeout = 1 + Random::NonCrypto::GetUint16InRange(minimumDelay, maximumDelay);
+    uint16_t minimumDelay = Min<uint16_t>(aRouterTransitionMinimum, kRouterTransitionDelayMax);
+    if (aRouterTransitionJitter == 0)
+    {
+        mTimeout = 1 + minimumDelay;
+    }
+    else
+    {
+        uint16_t jitter       = Min<uint16_t>(aRouterTransitionJitter, kRouterTransitionDelayMax);
+        uint16_t maximumDelay = Min<uint16_t>(minimumDelay + jitter + 1, kRouterTransitionDelayMax);
+        mTimeout              = 1 + Random::NonCrypto::GetUint16InRange(minimumDelay, maximumDelay);
+    }
 
     mTransition = aTransitionType;
 }

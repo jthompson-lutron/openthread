@@ -1760,6 +1760,10 @@ private:
         Mac::ExtAddress mExtAddress;
         uint16_t        mRequestedRloc16;
         uint8_t         mReason;
+        /**
+         * Optional flags detailing multiple upgrade reasons.  Currently used only for logging.
+         */
+        uint8_t mReasonDetailFlags;
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
         uint16_t mXtalAccuracy;
 #endif
@@ -2551,7 +2555,7 @@ private:
     static void HandleAdvertiseTrickleTimer(TrickleTimer &aTimer);
 
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
-    const char *RouterUpgradeReasonFlagsToString(RouterUpgradeReasonFlags aReasonFlags);
+    const char *RouterUpgradeStatusTlvReasonToString(AddrSolicitInfo::RouterUpgradeStatusTlvReason aStatusReasonFlag);
 #endif
 
 #endif // OPENTHREAD_FTD
