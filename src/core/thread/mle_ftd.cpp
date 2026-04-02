@@ -141,6 +141,10 @@ Error Mle::SetRouterEligible(bool aEligible)
         {
             mRouterRoleTransition.StartTimeout();
         }
+        else
+        {
+            mRouterRoleTransition.StopTimeout();
+        }
 
         Get<Mac::Mac>().SetBeaconEnabled(newEligibleState);
         break;
@@ -318,10 +322,7 @@ void Mle::HandleChildStart(void)
     StopLeader();
     Get<TimeTicker>().RegisterReceiver(TimeTicker::kMle);
 
-    if (IsRouterEligible())
-    {
-        Get<Mac::Mac>().SetBeaconEnabled(true);
-    }
+    Get<Mac::Mac>().SetBeaconEnabled(IsRouterEligible());
 
     Get<ThreadNetif>().SubscribeAllRoutersMulticast();
 
@@ -1584,8 +1585,6 @@ void Mle::HandleTimeTick(void)
 
                 mAdvertiseTrickleTimer.Start(TrickleTimer::kModePlainTimer, kReedAdvIntervalMin, kReedAdvIntervalMax);
             }
-
-            ExitNow();
         }
 
         OT_FALL_THROUGH;
@@ -1599,7 +1598,8 @@ void Mle::HandleTimeTick(void)
             mAttacher.Attach(kSamePartition);
         }
 
-        if (roleTransitionTimeoutExpired && mRouterTable.GetActiveRouterCount() > mRouterDowngradeThreshold)
+        if (roleTransitionTimeoutExpired && !IsChild() &&
+            mRouterTable.GetActiveRouterCount() > mRouterDowngradeThreshold)
         {
             LogNote("Downgrade to REED");
             mAttacher.Attach(kDowngradeToReed);
@@ -1608,7 +1608,7 @@ void Mle::HandleTimeTick(void)
         OT_FALL_THROUGH;
 
     case kRoleLeader:
-        if (roleTransitionTimeoutExpired && !IsRouterEligible())
+        if (roleTransitionTimeoutExpired && !IsChild() && !IsRouterEligible())
         {
             LogInfo("No longer router eligible");
             IgnoreError(BecomeDetached());
