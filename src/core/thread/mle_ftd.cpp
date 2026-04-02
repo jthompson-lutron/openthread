@@ -116,6 +116,7 @@ exit:
 Error Mle::SetRouterEligible(bool aEligible)
 {
     Error error = kErrorNone;
+    bool  newEligibleState;
 
     if (!IsFullThreadDevice())
     {
@@ -126,6 +127,9 @@ Error Mle::SetRouterEligible(bool aEligible)
 
     mRouterEligible = aEligible;
 
+    // The new eligible state may be affected by both mRouterEligible and the security policy
+    newEligibleState = IsRouterEligible();
+
     switch (mRole)
     {
     case kRoleDisabled:
@@ -133,17 +137,17 @@ Error Mle::SetRouterEligible(bool aEligible)
         break;
 
     case kRoleChild:
-        if (mRouterEligible)
+        if (newEligibleState)
         {
             mRouterRoleTransition.StartTimeout();
         }
 
-        Get<Mac::Mac>().SetBeaconEnabled(mRouterEligible);
+        Get<Mac::Mac>().SetBeaconEnabled(newEligibleState);
         break;
 
     case kRoleRouter:
     case kRoleLeader:
-        if (!mRouterEligible)
+        if (!newEligibleState)
         {
             IgnoreError(BecomeDetached());
         }
@@ -314,7 +318,7 @@ void Mle::HandleChildStart(void)
     StopLeader();
     Get<TimeTicker>().RegisterReceiver(TimeTicker::kMle);
 
-    if (mRouterEligible)
+    if (IsRouterEligible())
     {
         Get<Mac::Mac>().SetBeaconEnabled(true);
     }
@@ -1563,7 +1567,7 @@ void Mle::HandleTimeTick(void)
         break;
 
     case kRoleChild:
-        if (roleTransitionTimeoutExpired)
+        if (IsRouterEligible() && roleTransitionTimeoutExpired)
         {
             if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold && HasNeighborWithGoodLinkQuality())
             {
