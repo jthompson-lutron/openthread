@@ -141,10 +141,8 @@ Error Mle::SetRouterEligible(bool aEligible)
         {
             mRouterRoleTransition.StartTimeout();
         }
-        else
-        {
-            mRouterRoleTransition.StopTimeout();
-        }
+        // If the role transition timeout is running, it will be ignored when !IsRouterEligible()
+        // in Mle::HandleTimeTick()
 
         Get<Mac::Mac>().SetBeaconEnabled(newEligibleState);
         break;
@@ -317,6 +315,8 @@ void Mle::HandleChildStart(void)
 {
     mAddressSolicitRejected = false;
 
+    // Currently, this always starts the timer to attempt an upgrade, whether the conditions apply
+    // for an upgrade or not, which may be updated in future changes to the router role transition.
     mRouterRoleTransition.StartTimeout();
 
     StopLeader();
@@ -1568,7 +1568,15 @@ void Mle::HandleTimeTick(void)
         break;
 
     case kRoleChild:
-        if (IsRouterEligible() && roleTransitionTimeoutExpired)
+        if (!IsRouterEligible())
+        {
+            // This device is a FED.
+            // Skip the role transition check and do not start the REED advertisement timer.
+            // REED advertisements are stopped in Mle::HandleAdvertiseTrickleTimer() when a FED.
+            // A FED also doesn't need to check the leader's age.
+            break;
+        }
+        else if (roleTransitionTimeoutExpired)
         {
             if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold && HasNeighborWithGoodLinkQuality())
             {
@@ -1579,14 +1587,20 @@ void Mle::HandleTimeTick(void)
                 mAnnounceHandler.HandleRouterRoleTransitionAttemptDone();
             }
 
+            // Currently, a REED will begin advertising after the first role transition attempt,
+            // which may advertise even if an address solicit is in progress.
             if (!mAdvertiseTrickleTimer.IsRunning())
             {
                 SendMulticastAdvertisement();
 
                 mAdvertiseTrickleTimer.Start(TrickleTimer::kModePlainTimer, kReedAdvIntervalMin, kReedAdvIntervalMax);
             }
+
+            // Break to ensure that a downgrade is not attempted below right after an attempt to upgrade
+            break;
         }
 
+        // REEDs should process the leader age below when they have not just attempted to upgrade to router role.
         OT_FALL_THROUGH;
 
     case kRoleRouter:
@@ -1598,8 +1612,7 @@ void Mle::HandleTimeTick(void)
             mAttacher.Attach(kSamePartition);
         }
 
-        if (roleTransitionTimeoutExpired && !IsChild() &&
-            mRouterTable.GetActiveRouterCount() > mRouterDowngradeThreshold)
+        if (roleTransitionTimeoutExpired && mRouterTable.GetActiveRouterCount() > mRouterDowngradeThreshold)
         {
             LogNote("Downgrade to REED");
             mAttacher.Attach(kDowngradeToReed);
@@ -1608,7 +1621,7 @@ void Mle::HandleTimeTick(void)
         OT_FALL_THROUGH;
 
     case kRoleLeader:
-        if (roleTransitionTimeoutExpired && !IsChild() && !IsRouterEligible())
+        if (roleTransitionTimeoutExpired && !IsRouterEligible())
         {
             LogInfo("No longer router eligible");
             IgnoreError(BecomeDetached());
