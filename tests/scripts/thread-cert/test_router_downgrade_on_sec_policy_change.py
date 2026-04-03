@@ -27,10 +27,8 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-import ipaddress
 import unittest
 
-import command
 import config
 import thread_cert
 
@@ -135,9 +133,16 @@ class DowngradeOnSecPolicyChange(thread_cert.TestCase):
         self.assertEqual(leader.get_state(), 'leader')
         self.assertFalse(leader.get_router_eligible())
 
-        # Make sure both leader and router are downgraded and are now `detached`.
+        # The security policy should propagate to the router in this time and the router should have
+        # downgraded within + 1s (MLE time tick) + 1s (config.DEFAULT_ROUTER_SELECTION_JITTER).
+        self.assertEqual(router.get_state(), 'detached')
+        self.assertFalse(router.get_router_eligible())
 
-        self.simulator.go(80)
+        # After the leader downgrades, verify both are now `detached`.
+
+        # The leader should downgrade within: 10s (LEADER_DOWNGRADE_ADD_DELAY) + 1s (MLE time tick)
+        # + 1s (config.DEFAULT_ROUTER_SELECTION_JITTER) + 1s (rounding margin)
+        self.simulator.go(5)
         self.assertEqual(leader.get_state(), 'detached')
         self.assertEqual(router.get_state(), 'detached')
 
