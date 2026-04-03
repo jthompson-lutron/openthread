@@ -2498,11 +2498,49 @@ private:
     void     SetChildStateToValid(Child &aChild);
     bool     HasChildren(void);
     void     RemoveChildren(void);
-    bool     ShouldDowngrade(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
-    bool     NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const;
-    void     HandleAdvertiseTrickleTimer(void);
-    void     HandleTimeTick(void);
-    void     HandleRouterTableEvent(RouterTable::Events aEvents);
+
+    /**
+     * Determine if a router downgrade transition should occur or timer should be started.
+     *
+     * Note: Checks all downgrade conditions except having comparable connectivity to a neighbor router both when
+     * the timer is started and when the downgrade is performed.
+     *
+     * @retval TRUE   Downgrade conditions may apply.
+     * @retval FALSE  The device should not downgrade.
+     *
+     * @sa ShouldBeginDowngradeTimer
+     */
+    bool ShouldDowngrade(void) const;
+
+    /**
+     * Determine if a router downgrade transition timer should be started.
+     *
+     * Note: Checks all conditions known when handling advertisments.
+     *
+     * @retval TRUE   The unit should begin its downgrade timer.
+     * @retval FALSE  The device should not downgrade.
+     */
+    bool ShouldBeginDowngradeTimer(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
+
+    /**
+     * Determine if a router upgrade transition should occur or timer should be started.
+     *
+     * Note: This checks all upgrade conditions both when the timer is started and when the upgrade is attempted but
+     * does not check `HasNeighborWithGoodLinkQuality()`, so that the runtime required by that check will only
+     * apply just before making the attempt to upgrade.
+     *
+     * @retval TRUE   Upgrade conditions may apply.
+     * @retval FALSE  The device should not upgrade.
+     *
+     * @sa HasNeighborWithGoodLinkQuality
+     */
+    bool ShouldUpgrade(void) const;
+
+    bool NeighborHasComparableConnectivity(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
+
+    void HandleAdvertiseTrickleTimer(void);
+    void HandleTimeTick(void);
+    void HandleRouterTableEvent(RouterTable::Events aEvents);
 
     template <Uri kUri> void HandleTmf(Coap::Msg &aMsg);
 

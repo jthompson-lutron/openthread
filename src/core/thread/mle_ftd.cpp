@@ -116,7 +116,6 @@ exit:
 Error Mle::SetRouterEligible(bool aEligible)
 {
     Error error = kErrorNone;
-    bool  newEligibleState;
 
     if (!IsFullThreadDevice())
     {
@@ -134,13 +133,12 @@ Error Mle::SetRouterEligible(bool aEligible)
         break;
 
     case kRoleChild:
-        newEligibleState = IsRouterEligible();
-        if (newEligibleState)
+        if (ShouldUpgrade())
         {
             StartRouterRoleUpgradeTransition();
         }
 
-        Get<Mac::Mac>().SetBeaconEnabled(newEligibleState);
+        Get<Mac::Mac>().SetBeaconEnabled(IsRouterEligible());
         break;
 
     case kRoleRouter:
@@ -311,11 +309,12 @@ void Mle::HandleChildStart(void)
 {
     mAddressSolicitRejected = false;
 
-    if (IsRouterEligible())
+    if (ShouldUpgrade())
     {
         // As a REED, re-start the timer to check for a role upgrade when re-attaching as a Child
         StartRouterRoleUpgradeTransition();
     }
+    // If a REED is attaching to a new parent, it may begin sending advertisements on the next time tick
 
     StopLeader();
     Get<TimeTicker>().RegisterReceiver(TimeTicker::kMle);
@@ -1272,7 +1271,7 @@ Error Mle::HandleAdvertisementOnFtd(RxInfo &aRxInfo, uint16_t aSourceAddress, co
                 ExitNow(error = kErrorDetached);
             }
 
-            if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold)
+            if (ShouldUpgrade())
             {
                 if (!mRouterRoleTransition.IsUpgrading())
                 {
@@ -1310,7 +1309,7 @@ Error Mle::HandleAdvertisementOnFtd(RxInfo &aRxInfo, uint16_t aSourceAddress, co
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Update routers as a router or leader.
 
-    if (ShouldDowngrade(routerId, routeTlv))
+    if (ShouldBeginDowngradeTimer(routerId, routeTlv))
     {
         // Downgrade conditions have been met after an advertisement from another active router
         StartRouterRoleDowngradeTransition();
@@ -1586,7 +1585,7 @@ void Mle::HandleTimeTick(void)
         else if (IsRouterRoleUpgradePending())
         {
             // An upgrade should be performed, if the conditions to upgrade still apply
-            if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold && HasNeighborWithGoodLinkQuality())
+            if (ShouldUpgrade() && HasNeighborWithGoodLinkQuality())
             {
                 IgnoreError(BecomeRouter(kReasonTooFewRouters));
                 // Any attempt to become a router will also clear the current role transition
@@ -1601,7 +1600,8 @@ void Mle::HandleTimeTick(void)
         }
         else if (!IsRouterRoleTransitioning() && !mAdvertiseTrickleTimer.IsRunning())
         {
-            // REEDs that aren't transitioning roles should start sending REED advertisements
+            // REEDs that aren't transitioning roles should start sending REED advertisements,
+            // which may occur immediately after transitioning to kRoleChild.
             SendMulticastAdvertisement();
             mAdvertiseTrickleTimer.Start(TrickleTimer::kModePlainTimer, kReedAdvIntervalMin, kReedAdvIntervalMax);
         }
@@ -1611,8 +1611,8 @@ void Mle::HandleTimeTick(void)
     case kRoleRouter:
         if (mRouterRoleTransition.IsDowngradePending())
         {
-            // Downgrades due to too many routers applies only to kRoleRouter
-            if (!routerEligible || mRouterTable.GetActiveRouterCount() > mRouterDowngradeThreshold)
+            // Downgrade if no longer eligible or downgrade conditions continue to apply
+            if (!routerEligible || ShouldDowngrade())
             {
                 LogNote("Downgrade to REED");
                 mAttacher.Attach(kDowngradeToReed);
@@ -1632,6 +1632,7 @@ void Mle::HandleTimeTick(void)
 
         if (mRouterRoleTransition.IsDowngradePending())
         {
+            // Downgrade from kRoleLeader only when no longer router eligible
             if (!routerEligible)
             {
                 // Only use detachment to downgrade in kRoleLeader mRole
@@ -3795,58 +3796,23 @@ void Mle::FillConnectivityTlvValue(ConnectivityTlvValue &aTlvValue) const
     aTlvValue.InitFrom(connectivity);
 }
 
-bool Mle::ShouldDowngrade(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
+bool Mle::ShouldBeginDowngradeTimer(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
 {
     // Determine whether all conditions are satisfied for the router
     // to downgrade after receiving info for a neighboring router
     // with Router ID `aNeighborId` along with its `aRouteTlv`.
 
-    bool    shouldDowngrade   = false;
-    uint8_t activeRouterCount = mRouterTable.GetActiveRouterCount();
-    uint8_t count;
+    bool shouldDowngrade = false;
 
-    VerifyOrExit(IsRouter());
     VerifyOrExit(mRouterTable.IsAllocated(aNeighborId));
-    VerifyOrExit(!mBlockDowngrade);
 
     // Return false, to let an existing downgrade transition continue
     VerifyOrExit(!mRouterRoleTransition.IsDowngrading());
 
-    VerifyOrExit(activeRouterCount > mRouterDowngradeThreshold);
+    VerifyOrExit(ShouldDowngrade());
 
-    // Check that we have at least `kMinDowngradeNeighbors`
-    // neighboring routers with two-way link quality of 2 or better.
-
-    count = 0;
-
-    for (const Router &router : mRouterTable)
-    {
-        if (!router.IsStateValid() || (router.GetTwoWayLinkQuality() < kLinkQuality2))
-        {
-            continue;
-        }
-
-        count++;
-
-        if (count >= kMinDowngradeNeighbors)
-        {
-            break;
-        }
-    }
-
-    VerifyOrExit(count >= kMinDowngradeNeighbors);
-
-    // Check that we have fewer children than three times the number
-    // of excess routers (defined as the difference between number of
-    // active routers and `mRouterDowngradeThreshold`).
-
-    count = activeRouterCount - mRouterDowngradeThreshold;
-    VerifyOrExit(mChildTable.GetNumChildren(Child::kInStateValid) < count * 3);
-
-    // Check that the neighbor has as good or better-quality links to
-    // same routers.
-
-    VerifyOrExit(NeighborHasComparableConnectivity(aRouteTlv, aNeighborId));
+    // Check that the neighbor has as good or better-quality links to the same routers.
+    VerifyOrExit(NeighborHasComparableConnectivity(aNeighborId, aRouteTlv));
 
 #if OPENTHREAD_CONFIG_BORDER_ROUTER_ENABLE && OPENTHREAD_CONFIG_BORDER_ROUTER_REQUEST_ROUTER_ROLE
     // Check if we are eligible to be router due to being a BR.
@@ -3859,7 +3825,61 @@ exit:
     return shouldDowngrade;
 }
 
-bool Mle::NeighborHasComparableConnectivity(const RouteTlv &aRouteTlv, uint8_t aNeighborId) const
+bool Mle::ShouldDowngrade(void) const
+{
+    uint8_t count;
+    uint8_t excessRouters;
+    bool    shouldDowngrade   = false;
+    uint8_t activeRouterCount = mRouterTable.GetActiveRouterCount();
+
+    // Only kRoleRouter may downgrade.
+    // kRoleLeader may not downgrade due to these conditions, and other roles are not applicable.
+    VerifyOrExit(IsRouter());
+
+    VerifyOrExit(!mBlockDowngrade);
+    VerifyOrExit(activeRouterCount > mRouterDowngradeThreshold);
+
+    excessRouters = (activeRouterCount > mRouterDowngradeThreshold) ? activeRouterCount - mRouterDowngradeThreshold : 0;
+    VerifyOrExit(mChildTable.GetNumChildren(Child::kInStateValid) < excessRouters * 3);
+
+    // Check that we have at least `kMinDowngradeNeighbors`
+    // neighboring routers with two-way link quality of 2 or better.
+    count = 0;
+    for (const Router &router : mRouterTable)
+    {
+        if (!router.IsStateValid() || (router.GetTwoWayLinkQuality() < kLinkQuality2))
+        {
+            continue;
+        }
+        count++;
+        if (count >= kMinDowngradeNeighbors)
+        {
+            break;
+        }
+    }
+    VerifyOrExit(count >= kMinDowngradeNeighbors);
+
+    shouldDowngrade = true;
+exit:
+    return shouldDowngrade;
+}
+
+bool Mle::ShouldUpgrade(void) const
+{
+    bool shouldUpgrade = false;
+
+    VerifyOrExit(IsRouterEligible());
+
+    if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold)
+    {
+        shouldUpgrade = true;
+    }
+
+exit:
+    return shouldUpgrade;
+}
+
+bool Mle::NeighborHasComparableConnectivity(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
 {
     // Check whether the neighboring router with Router ID `aNeighborId`
     // (along with its `aRouteTlv`) has as good or better-quality links
