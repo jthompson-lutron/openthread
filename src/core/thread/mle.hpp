@@ -813,13 +813,15 @@ public:
     /**
      * Generates an Address Solicit request for a Router ID.
      *
-     * @param[in]  aReason  The reason for requesting a Router ID.
+     * @param[in] aReasonFlags Bitmap of reasons causing the attempt to upgrade to a router.
      *
      * @retval kErrorNone           Successfully generated an Address Solicit message.
+     * @retval kErrorBusy           An Address Solicit Request is already in progress.
      * @retval kErrorNotCapable     Device is not capable of becoming a router
      * @retval kErrorInvalidState   Thread is not enabled
+     * @retval kErrorInvalidArgs    An invalid aReasonFlags was provided.
      */
-    Error BecomeRouter(RouterUpgradeReason aReason);
+    Error BecomeRouter(RouterUpgradeReasonFlags aReasonFlags);
 
     /**
      * Specifies the leader weight check behavior used in `BecomeLeader()`.
@@ -1769,7 +1771,14 @@ private:
 
         Mac::ExtAddress mExtAddress;
         uint16_t        mRequestedRloc16;
-        uint8_t         mReason;
+        /**
+         * Single reason given in the Status TLV for backwards compatibility
+         */
+        RouterUpgradeReasonFlags::StatusTlvEnum mStatusTlvReason;
+        /**
+         * mReasonFlags can indicate multiple upgrade reasons, or kUpgradeReasonFlagsNone if omitted.
+         */
+        RouterUpgradeReasonFlags mReasonFlags;
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
         uint16_t mXtalAccuracy;
 #endif
@@ -2491,7 +2500,7 @@ private:
     Error    ReadAndProcessRouteTlvOnFtdChild(RxInfo &aRxInfo, uint8_t aParentId);
     void     StopAdvertiseTrickleTimer(void);
     uint32_t DetermineAdvertiseIntervalMax(void) const;
-    Error    SendAddressSolicit(RouterUpgradeReason aReason);
+    Error    SendAddressSolicit(RouterUpgradeReasonFlags aReasonFlags);
     void     ProcessAddressSolicit(AddrSolicitInfo &aInfo);
     void     SendAddressRelease(void);
     void     SendMulticastAdvertisement(void);
@@ -2543,18 +2552,21 @@ private:
     bool ShouldBeginDowngradeTimer(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
 
     /**
-     * Determine if a router upgrade transition should occur or timer should be started.
+     * Get the upgrade reason flags that apply, if a router upgrade transition or its timer should be started.
      *
      * Note: This checks all upgrade conditions both when the timer is started and when the upgrade is attempted but
      * does not check `HasNeighborWithGoodLinkQuality()`, so that the runtime required by that check will only
      * apply just before making the attempt to upgrade.
      *
-     * @retval TRUE   Upgrade conditions may apply.
-     * @retval FALSE  The device should not upgrade.
+     * @param[in] aImmediateUpgradeReason A reason to upgrade immediately or kUpgradeReasonFlagsNone by default
+     *
+     * @returns RouterUpgradeReasonFlags with one or more flags set or kUpgradeReasonFlagsNone,
+     * if no upgrade should be started
      *
      * @sa HasNeighborWithGoodLinkQuality
      */
-    bool ShouldUpgrade(void) const;
+    RouterUpgradeReasonFlags GetUpgradeReasons(RouterUpgradeReasonFlags::ReasonBitmapEnum aImmediateUpgradeReason =
+                                                   RouterUpgradeReasonFlags::kUpgradeReasonFlagsNone) const;
 
     bool NeighborHasComparableConnectivity(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
 
@@ -2575,7 +2587,7 @@ private:
     static void HandleAdvertiseTrickleTimer(TrickleTimer &aTimer);
 
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
-    const char *RouterUpgradeReasonToString(uint8_t aReason);
+    const char *RouterUpgradeReasonToString(RouterUpgradeReasonFlags::StatusTlvEnum aStatusTlvReason);
 #endif
 
 #endif // OPENTHREAD_FTD

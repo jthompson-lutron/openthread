@@ -131,7 +131,8 @@ void Mle::UpdateRouterRoleAllowed(UpdateRouterRoleAllowedReason aReason)
     // Take action based on the current role, the new `mRouterRoleAllowed`,
     // and the reason for the change.
 
-    if (IsChild() && mRouterRoleAllowed && (aReason == kReasonConfigParameterChanged) && ShouldUpgrade())
+    if (IsChild() && mRouterRoleAllowed && (aReason == kReasonConfigParameterChanged) &&
+        GetUpgradeReasons().HasReason())
     {
         StartRouterRoleUpgradeTransition();
     }
@@ -217,9 +218,12 @@ void Mle::SetDeviceProperties(const DeviceProperties &aDeviceProperties)
 }
 #endif
 
-Error Mle::BecomeRouter(RouterUpgradeReason aReason)
+Error Mle::BecomeRouter(RouterUpgradeReasonFlags aReasonFlags)
 {
     Error error = kErrorNone;
+
+    VerifyOrExit(!mAddressSolicitPending, error = kErrorBusy);
+    VerifyOrExit(aReasonFlags.HasReason(), error = kErrorInvalidArgs);
 
     switch (mRole)
     {
@@ -238,11 +242,11 @@ Error Mle::BecomeRouter(RouterUpgradeReason aReason)
 
     VerifyOrExit(IsRouterRoleAllowed(), error = kErrorNotCapable);
 
-    LogInfo("Attempt to become router, reason:%s", RouterUpgradeReasonToString(aReason));
+    LogInfo("Attempt to become router with reason flags: (0x%02x)", aReasonFlags.AsUint8());
 
     Get<MeshForwarder>().SetRxOnWhenIdle(true);
 
-    error = SendAddressSolicit(aReason);
+    error = SendAddressSolicit(aReasonFlags);
 
 exit:
     // The upgrade attempt was completed.
@@ -343,7 +347,7 @@ void Mle::HandleChildStart(void)
 {
     mAddressSolicitRejected = false;
 
-    if (ShouldUpgrade())
+    if (GetUpgradeReasons().HasReason())
     {
         // As a REED, re-start the timer to check for a role upgrade when re-attaching as a Child
         StartRouterRoleUpgradeTransition();
@@ -375,7 +379,7 @@ void Mle::HandleChildStart(void)
     case kSamePartition:
         if (HasChildren())
         {
-            IgnoreError(BecomeRouter(kReasonHaveChildIdRequest));
+            IgnoreError(BecomeRouter(RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag));
         }
 
         break;
@@ -408,7 +412,7 @@ void Mle::HandleChildStart(void)
     case kBetterPartition:
         if (HasChildren() && mPreviousPartitionIdRouter != mLeaderData.GetPartitionId())
         {
-            IgnoreError(BecomeRouter(kReasonParentPartitionChange));
+            IgnoreError(BecomeRouter(RouterUpgradeReasonFlags::kUpgradeReasonParentPartitionChangeFlag));
         }
 
         break;
@@ -1311,7 +1315,7 @@ Error Mle::HandleAdvertisementOnFtd(RxInfo &aRxInfo, uint16_t aSourceAddress, co
                 ExitNow(error = kErrorDetached);
             }
 
-            if (ShouldUpgrade())
+            if (GetUpgradeReasons().HasReason())
             {
                 if (!IsRouterRoleTransitioning())
                 {
@@ -1623,10 +1627,11 @@ void Mle::HandleTimeTick(void)
         }
         else if (IsRouterRoleUpgradePending())
         {
+            RouterUpgradeReasonFlags upgradeReasons = GetUpgradeReasons();
             // An upgrade should be performed, if the conditions to upgrade still apply
-            if (ShouldUpgrade() && HasNeighborWithGoodLinkQuality())
+            if (upgradeReasons.HasReason() && HasNeighborWithGoodLinkQuality())
             {
-                IgnoreError(BecomeRouter(kReasonTooFewRouters));
+                IgnoreError(BecomeRouter(upgradeReasons));
                 // Any attempt to become a router will also clear the current role transition
             }
             else
@@ -2289,7 +2294,7 @@ void Mle::HandleChildIdRequest(RxInfo &aRxInfo)
     {
     case kRoleChild:
         child->SetState(Neighbor::kStateChildIdRequest);
-        IgnoreError(BecomeRouter(kReasonHaveChildIdRequest));
+        IgnoreError(BecomeRouter(RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag));
         break;
 
     case kRoleRouter:
@@ -3354,13 +3359,16 @@ void Mle::SetRouterId(uint8_t aRouterId)
     mPreviousRouterId = mRouterId;
 }
 
-Error Mle::SendAddressSolicit(RouterUpgradeReason aReason)
+Error Mle::SendAddressSolicit(RouterUpgradeReasonFlags aReasonFlags)
 {
     Error          error   = kErrorNone;
     Coap::Message *message = nullptr;
     Ip6::Address   leaderRloc;
 
+    RouterUpgradeReasonFlags::StatusTlvEnum statusTlvReason;
+
     VerifyOrExit(!mAddressSolicitPending);
+    SuccessOrExit(error = aReasonFlags.AsStatusTlvReason(statusTlvReason));
 
     message = Get<Tmf::Agent>().AllocateAndInitPriorityConfirmablePostMessage(kUriAddressSolicit);
     VerifyOrExit(message != nullptr, error = kErrorNoBufs);
@@ -3372,7 +3380,8 @@ Error Mle::SendAddressSolicit(RouterUpgradeReason aReason)
         SuccessOrExit(error = Tlv::Append<ThreadRloc16Tlv>(*message, Rloc16FromRouterId(mPreviousRouterId)));
     }
 
-    SuccessOrExit(error = Tlv::Append<ThreadStatusTlv>(*message, aReason));
+    SuccessOrExit(error = Tlv::Append<ThreadStatusTlv>(*message, static_cast<uint8_t>(statusTlvReason)));
+    SuccessOrExit(error = Tlv::Append<RouterUpgradeReasonFlagsTlv>(*message, aReasonFlags));
 
 #if OPENTHREAD_CONFIG_TIME_SYNC_ENABLE
     SuccessOrExit(error = Tlv::Append<XtalAccuracyTlv>(*message, otPlatTimeGetXtalAccuracy()));
@@ -3384,6 +3393,9 @@ Error Mle::SendAddressSolicit(RouterUpgradeReason aReason)
     mAddressSolicitPending = true;
 
     Log(kMessageSend, kTypeAddressSolicit, leaderRloc);
+
+    LogInfo("Sending AddrSolicit (statusTlvReason: %s, flags: 0x%02x)", RouterUpgradeReasonToString(statusTlvReason),
+            aReasonFlags.AsUint8());
 
 exit:
     FreeMessageOnError(message, error);
@@ -3582,12 +3594,19 @@ Error Mle::AddrSolicitInfo::ParseFrom(const Coap::Msg &aMsg)
 {
     // Parses a `kUriAddressSolicit` request message.
 
-    Error error;
+    Error   error;
+    uint8_t statusTlvReason;
 
     VerifyOrExit(aMsg.IsConfirmable(), error = kErrorParse);
 
     SuccessOrExit(error = Tlv::Find<ThreadExtMacAddressTlv>(aMsg.mMessage, mExtAddress));
-    SuccessOrExit(error = Tlv::Find<ThreadStatusTlv>(aMsg.mMessage, mReason));
+    SuccessOrExit(error = Tlv::Find<ThreadStatusTlv>(aMsg.mMessage, statusTlvReason));
+    mStatusTlvReason = static_cast<RouterUpgradeReasonFlags::StatusTlvEnum>(statusTlvReason);
+    if (Tlv::Find<RouterUpgradeReasonFlagsTlv>(aMsg.mMessage, mReasonFlags) != kErrorNone)
+    {
+        // For backwards compatibility, RouterUpgradeReasonFlagsTlv may be omitted.
+        mReasonFlags = RouterUpgradeReasonFlags(RouterUpgradeReasonFlags::kUpgradeReasonFlagsNone);
+    }
 
     switch (Tlv::Find<ThreadRloc16Tlv>(aMsg.mMessage, mRequestedRloc16))
     {
@@ -3625,7 +3644,8 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
     aInfo.mResponse = kAddrSolicitNoAddressAvailable;
     aInfo.mRouter   = nullptr;
 
-    LogInfo("AddrSolicit Reason: %s", RouterUpgradeReasonToString(aInfo.mReason));
+    LogInfo("Received AddrSolicit (reason: %s, flags: 0x%02x)", RouterUpgradeReasonToString(aInfo.mStatusTlvReason),
+            aInfo.mReasonFlags.AsUint8());
 
     if (aInfo.mRequestedRloc16 != kInvalidRloc16)
     {
@@ -3644,17 +3664,17 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
         ExitNow();
     }
 
-    switch (aInfo.mReason)
+    switch (aInfo.mStatusTlvReason)
     {
-    case kReasonTooFewRouters:
+    case RouterUpgradeReasonFlags::kReasonTooFewRouters:
         VerifyOrExit(mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold);
         break;
 
-    case kReasonHaveChildIdRequest:
-    case kReasonParentPartitionChange:
+    case RouterUpgradeReasonFlags::kReasonHaveChildIdRequest:
+    case RouterUpgradeReasonFlags::kReasonParentPartitionChange:
         break;
 
-    case kReasonBorderRouterRequest:
+    case RouterUpgradeReasonFlags::kReasonBorderRouterRequest:
         if ((mRouterTable.GetActiveRouterCount() >= mRouterUpgradeThreshold) &&
             (Get<NetworkData::Leader>().CountBorderRouters(NetworkData::kRouterRoleOnly) >=
              kRouterUpgradeBorderRouterRequestThreshold))
@@ -3899,19 +3919,24 @@ exit:
     return shouldDowngrade;
 }
 
-bool Mle::ShouldUpgrade(void) const
+RouterUpgradeReasonFlags Mle::GetUpgradeReasons(
+    RouterUpgradeReasonFlags::ReasonBitmapEnum aImmediateUpgradeReason) const
 {
-    bool shouldUpgrade = false;
+    RouterUpgradeReasonFlags reasonFlags(RouterUpgradeReasonFlags::kUpgradeReasonFlagsNone);
 
     VerifyOrExit(IsRouterRoleAllowed());
 
+    reasonFlags |= aImmediateUpgradeReason;
+
+    // Additional reasons that do not upgrade immediately
     if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold)
     {
-        shouldUpgrade = true;
+        reasonFlags |= RouterUpgradeReasonFlags::kUpgradeReasonTooFewRoutersFlag;
     }
+    // Future changes will include additional changes here for kUpgradeReasonManagedRouterFlag
 
 exit:
-    return shouldUpgrade;
+    return reasonFlags;
 }
 
 bool Mle::NeighborHasComparableConnectivity(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const
@@ -4061,24 +4086,26 @@ exit:
 
 #if OT_SHOULD_LOG_AT(OT_LOG_LEVEL_INFO)
 
-const char *Mle::RouterUpgradeReasonToString(uint8_t aReason)
+const char *Mle::RouterUpgradeReasonToString(RouterUpgradeReasonFlags::StatusTlvEnum aStatusTlvReason)
 {
-    const char *str = "Unknown";
+    const char *str;
 
-    switch (aReason)
+    switch (aStatusTlvReason)
     {
-    case kReasonTooFewRouters:
+    case RouterUpgradeReasonFlags::kReasonTooFewRouters:
         str = "TooFewRouters";
         break;
-    case kReasonHaveChildIdRequest:
+    case RouterUpgradeReasonFlags::kReasonHaveChildIdRequest:
         str = "HaveChildIdRequest";
         break;
-    case kReasonParentPartitionChange:
+    case RouterUpgradeReasonFlags::kReasonParentPartitionChange:
         str = "ParentPartitionChange";
         break;
-    case kReasonBorderRouterRequest:
+    case RouterUpgradeReasonFlags::kReasonBorderRouterRequest:
         str = "BorderRouterRequest";
         break;
+    default:
+        str = "Unknown";
     }
 
     return str;
