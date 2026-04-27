@@ -80,7 +80,6 @@ Mle::Mle(Instance &aInstance)
     , mWedAttachTimer(aInstance)
 #endif
 #if OPENTHREAD_FTD
-    , mRouterEligible(true)
     , mRouterRoleAllowed(true)
     , mBlockDowngrade(false)
     , mAddressSolicitPending(false)
@@ -91,13 +90,6 @@ Mle::Mle(Instance &aInstance)
 #endif
     , mNetworkIdTimeout(kNetworkIdTimeout)
 
-    , mRouterUpgradeThreshold(kRouterUpgradeThreshold)
-    , mRouterDowngradeThreshold(kRouterDowngradeThreshold)
-    , mRouterUpgradeDelayMinimum(kRouterTransitionMinimumDefault)
-    , mRouterUpgradeDelayJitter(kRouterTransitionJitterDefault)
-    , mRouterDowngradeDelayMinimum(kRouterTransitionMinimumDefault)
-    , mRouterDowngradeDelayJitter(kRouterTransitionJitterDefault)
-
     , mPreviousPartitionRouterIdSequence(0)
     , mPreviousPartitionIdTimeout(0)
     , mChildRouterLinks(kChildRouterLinks)
@@ -105,7 +97,6 @@ Mle::Mle(Instance &aInstance)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     , mMaxChildIpAddresses(0)
 #endif
-    , mParentPriority(kParentPriorityUnspecified)
     , mPreviousPartitionIdRouter(0)
     , mPreviousPartitionId(0)
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE

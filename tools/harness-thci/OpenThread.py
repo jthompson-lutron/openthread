@@ -3209,11 +3209,6 @@ class OpenThreadTHCI(object):
         return self.joinNetwork(deviceRole)
 
     @API
-    def setParentPrio(self, prio):
-        cmd = 'parentpriority %u' % prio
-        return self.__executeCommand(cmd)[-1] == 'Done'
-
-    @API
     def role_transition(self, role):
         cmd = 'mode %s' % OpenThreadTHCI._ROLE_MODE_DICT[role]
         return self.__executeCommand(cmd)[-1] == 'Done'

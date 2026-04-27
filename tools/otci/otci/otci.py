@@ -676,14 +676,6 @@ class OTCI(object):
         """Set the NETWORK_ID_TIMEOUT parameter used in the Router role."""
         self.execute_command(f'networkidtimeout {timeout}')
 
-    def get_parent_priority(self) -> int:
-        """Get the assigned parent priority value, -2 means not assigned."""
-        return self.__parse_int(self.execute_command('parentpriority'))
-
-    def set_parent_priority(self, priority: int):
-        """Set the assigned parent priority value: 1, 0, -1 or -2."""
-        self.execute_command(f'parentpriority {priority}')
-
     def get_router_upgrade_threshold(self) -> int:
         """Get the ROUTER_UPGRADE_THRESHOLD value."""
         return self.__parse_int(self.execute_command('routerupgradethreshold'))

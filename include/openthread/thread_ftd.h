@@ -368,6 +368,152 @@ void otThreadSetContextIdReuseDelay(otInstance *aInstance, uint32_t aDelay);
 uint8_t otThreadGetNetworkIdTimeout(otInstance *aInstance);
 
 /**
+ * Bit offsets for `otRouterAdministrationOptionsType`
+ */
+typedef enum
+{
+    /** Bit 0: Managed (unmanaged with default of 0) */
+    OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLE_BIT = 0,
+    /** Bit 1: Ineligible (router-eligible with default of 0) */
+    OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_ENABLE_BIT = 1,
+} OT_ROUTER_ADMINISTRATION_OPTIONS_BITS;
+
+/**
+ * Default `otRouterAdministrationOptionsType`.
+ */
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_DEFAULT (0x0)
+/**
+ * Specifies no change to the current `otRouterAdministrationOptionsType`.
+ */
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE (0xFF)
+/**
+ * `otRouterAdministrationOptionsType` for a router-eligible Managed Router configuration.
+ */
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_MASK (1 << OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_ENABLE_BIT)
+/**
+ * `otRouterAdministrationOptionsType` to disable router eligibility.
+ */
+#define OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK (1 << OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_ENABLE_BIT)
+
+/**
+ * Enumerated thresholds for parent priority thresholds based on capacity utilization.
+ *
+ * * If OT_CAPACITY_USED_NONE is used, the threshold is disabled.
+ * * Where thresholds overlap, the higher priority threshold overrides.
+ * * Capacity thresholds are only valid where all higher priority thresholds are less than or equal
+ *   to lower priority thresholds.
+ * * Capacity thresholds apply when all higher priority thresholds are less than the threshold
+ *   and the current capacity is less than or equal to the floor of the calculated capacity ratio.
+ */
+typedef enum
+{
+    OT_CAPACITY_USED_NONE           = 0,   ///< Disables the capacity threshold (exclusive)
+    OT_CAPACITY_USED_ONE_QUARTER    = 1,   ///< 1/4 capacity threshold (floored, then inclusive)
+    OT_CAPACITY_USED_ONE_THIRD      = 2,   ///< 1/3 capacity threshold (floored, then inclusive)
+    OT_CAPACITY_USED_ONE_HALF       = 3,   ///< 1/2 capacity threshold (floored, then inclusive)
+    OT_CAPACITY_USED_TWO_THIRDS     = 4,   ///< 2/3 capacity threshold (floored, then inclusive)
+    OT_CAPACITY_USED_THREE_QUARTERS = 5,   ///< 3/4 capacity threshold (floored, then inclusive)
+    OT_CAPACITY_FULL                = 6,   ///< Full capacity threshold (inclusive)
+    OT_CAPACITY_USED_UNCHANGED_CODE = 0xE, ///< Specifies no change to the threshold when applied
+    OT_CAPACITY_USED_DEFAULT_CODE   = 0xF  ///< Applies the default value to the threshold when applied
+} otCapacityThresholdEnum;
+
+/**
+ * Parameters used to manage transitions to/from the router role.
+ *
+ * @sa otRouterAdministrationConfiguration
+ */
+typedef struct
+{
+    /**
+     * The minimum delay before an upgrade in seconds.
+     *
+     * Valid if: 0 - 600, unchanged (0xFFFE), or use-default (0xFFFF)
+     */
+    uint16_t mDelayMinimum;
+    /**
+     * The additional randomized time in seconds before an upgrade in seconds.
+     *
+     * Valid if: 0-1200, unchanged (0xFFFE), or default (0xFFFF)
+     */
+    uint16_t mDelayJitter;
+    /** Valid if: 0 - MaxRouters(32), unchanged (0xFE), or use-default (0xFF) */
+    uint8_t mThreshold;
+} otRoleTransitionType;
+
+/** The maximum valid active router threshold. */
+#define OT_ACTIVE_ROUTER_THRESHOLD_MAXIMUM (OPENTHREAD_CONFIG_MLE_MAX_ROUTERS)
+/** Specifies no change to an active router up/downgrade threshold when applied */
+#define OT_ACTIVE_ROUTER_THRESHOLD_UNCHANGED_CODE (0xFEu)
+/** Applies the default value to an active router up/downgrade threshold when applied */
+#define OT_ACTIVE_ROUTER_THRESHOLD_USE_DEFAULT_CODE (0xFFu)
+
+/** The maximum valid value for a role transition delay minimum. */
+#define OT_ROLE_TRANSITION_DELAY_MINIMUM_LIMIT (600u)
+/** The maximum valid value for a role transition delay jitter. */
+#define OT_ROLE_TRANSITION_DELAY_JITTER_LIMIT (1200u)
+/** Specifies no change to the role transition delay when applied */
+#define OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE (0xFFFEu)
+/** Applies the default value to the role transition delay when applied */
+#define OT_ROLE_TRANSITION_DELAY_USE_DEFAULT_CODE (0xFFFFu)
+
+/** Use this to apply default values for role transition parameters. */
+#define OT_ROLE_TRANSITION_USE_ALL_DEFAULTS                                                                     \
+    (otRoleTransitionType{OT_ROLE_TRANSITION_DELAY_USE_DEFAULT_CODE, OT_ROLE_TRANSITION_DELAY_USE_DEFAULT_CODE, \
+                          OT_ACTIVE_ROUTER_THRESHOLD_USE_DEFAULT_CODE})
+
+/** Use this to leave role transition parameters unchanged. */
+#define OT_ROLE_TRANSITION_ALL_UNCHANGED                                                                    \
+    (otRoleTransitionType{OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, \
+                          OT_ACTIVE_ROUTER_THRESHOLD_UNCHANGED_CODE})
+
+/**
+ * Router Administration Configuration.
+ */
+typedef struct
+{
+    /** Flags for enabling/disabling options, including reserved bits */
+    uint8_t mRouterAdministrationOptions;
+
+    // Parent Priority Thresholds
+    /** The Valid Child capacity threshold for using High Parent Priority. */
+    otCapacityThresholdEnum mParentPriorityHighThreshold;
+    /** The capacity threshold for using Medium Parent Priority. */
+    otCapacityThresholdEnum mParentPriorityMediumThreshold;
+
+    /** Parameters configuring upgrades to the router role. */
+    otRoleTransitionType mRouterUpgradeParameters;
+    /** Parameters configuring downgrades from the router role. */
+    otRoleTransitionType mRouterDowngradeParameters;
+} otRouterAdministrationConfiguration;
+
+/**
+ * Get the current values used for the Router Administration configuration.
+ *
+ * @param[in]  aInstance A pointer to an OpenThread instance.
+ *
+ * @returns The current Router Administration Configuration.
+ *
+ * @sa otThreadApplySpecifiedRouterAdministration
+ */
+otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otInstance *aInstance);
+
+/**
+ * Set the Router Administration to a specified configuration, which may use default or unchanged codes.
+ *
+ * @param[in]  aInstance      A pointer to an OpenThread instance.
+ * @param[in]  aConfiguration The specified Router Administration Configuration.
+ *
+ * @retval OT_ERROR_NONE         Successfully applied the values.
+ * @retval OT_ERROR_INVALID_ARGS Some parameters are not valid.  No changes have been applied.
+ * @retval OT_ERROR_NOT_CAPABLE  The device is not capable of becoming a router.  No changes have been applied.
+ *
+ * @sa otThreadGetCurrentRouterAdministration
+ */
+otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
+                                                   const otRouterAdministrationConfiguration *aConfiguration);
+
+/**
  * Set the `NETWORK_ID_TIMEOUT` parameter.
  *
  * @note This API is reserved for testing and demo purposes only. Changing settings with
@@ -383,6 +529,8 @@ void otThreadSetNetworkIdTimeout(otInstance *aInstance, uint8_t aTimeout);
 /**
  * Get the ROUTER_UPGRADE_THRESHOLD parameter used in the REED role.
  *
+ * @deprecated This function is deprecated. Use `otThreadGetCurrentRouterAdministration()` instead.
+ *
  * @param[in]  aInstance A pointer to an OpenThread instance.
  *
  * @returns The ROUTER_UPGRADE_THRESHOLD value.
@@ -393,6 +541,8 @@ uint8_t otThreadGetRouterUpgradeThreshold(otInstance *aInstance);
 
 /**
  * Set the ROUTER_UPGRADE_THRESHOLD parameter used in the Leader role.
+ *
+ * @deprecated This function is deprecated. Use `otThreadApplySpecifiedRouterAdministration()` instead.
  *
  * @note This API is reserved for testing and demo purposes only. Changing settings with
  * this API will render a production application non-compliant with the Thread Specification.
@@ -512,10 +662,12 @@ void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThresho
  * For backwards compatibility, the maximum router selection jitter that can be set or fetched through Thread API
  * functions is limited to 255 seconds.  This maximum will be returned if the actual value is larger.
  */
-#define OT_API_MAX_ROUTER_SELECTION_JITTER (255)
+#define OT_API_DEPRECATED_MAX_ROUTER_SELECTION_JITTER (255)
 
 /**
  * Get the ROUTER_SELECTION_JITTER parameter used in the REED/Router role.
+ *
+ * @deprecated This function is deprecated. Use `otThreadGetCurrentRouterAdministration()` instead.
  *
  * Note: This is limited to returning a maximum of 255 seconds if the actual
  * jitter set is higher than this maximum.
@@ -524,13 +676,15 @@ void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThresho
  *
  * @returns The ROUTER_SELECTION_JITTER value (or max 255 seconds).
  *
- * @sa OT_API_MAX_ROUTER_SELECTION_JITTER
+ * @sa OT_API_DEPRECATED_MAX_ROUTER_SELECTION_JITTER
  * @sa otThreadSetRouterSelectionJitter
  */
 uint8_t otThreadGetRouterSelectionJitter(otInstance *aInstance);
 
 /**
  * Set the ROUTER_SELECTION_JITTER parameter used in the REED/Router role.
+ *
+ * @deprecated This function is deprecated. Use `otThreadApplySpecifiedRouterAdministration()` instead.
  *
  * @note This API is reserved for testing and demo purposes only. Changing settings with
  * this API will render a production application non-compliant with the Thread Specification.
@@ -695,33 +849,6 @@ otError otThreadSetPskc(otInstance *aInstance, const otPskc *aPskc);
  * @sa otThreadGetPskcRef
  */
 otError otThreadSetPskcRef(otInstance *aInstance, otPskcRef aKeyRef);
-
-/**
- * Get the assigned parent priority.
- *
- * @param[in]   aInstance   A pointer to an OpenThread instance.
- *
- * @returns The assigned parent priority value, -2 means not assigned.
- *
- * @sa otThreadSetParentPriority
- */
-int8_t otThreadGetParentPriority(otInstance *aInstance);
-
-/**
- * Set the parent priority.
- *
- * @note This API is reserved for testing and demo purposes only. Changing settings with
- * this API will render a production application non-compliant with the Thread Specification.
- *
- * @param[in]  aInstance        A pointer to an OpenThread instance.
- * @param[in]  aParentPriority  The parent priority value.
- *
- * @retval OT_ERROR_NONE           Successfully set the parent priority.
- * @retval OT_ERROR_INVALID_ARGS   If the parent priority value is not among 1, 0, -1 and -2.
- *
- * @sa otThreadGetParentPriority
- */
-otError otThreadSetParentPriority(otInstance *aInstance, int8_t aParentPriority);
 
 /**
  * Gets the maximum number of IP addresses that each MTD child may register with this device as parent.

@@ -93,7 +93,6 @@ Done
 - [p2p](#p2p-link-extaddr-extaddr)
 - [panid](#panid)
 - [parent](#parent)
-- [parentpriority](#parentpriority)
 - [partitionid](#partitionid)
 - [ping](#ping-async--i-source--m-ipaddr-size-count-interval-hoplimit-timeout)
 - [platform](#platform)
@@ -112,6 +111,7 @@ Done
 - [rloc16](#rloc16)
 - [route](#route)
 - [router](#router-list)
+- [routeradmin](#routeradmin)
 - [routerdowngradethreshold](#routerdowngradethreshold)
 - [routereligible](#routereligible)
 - [routerselectionjitter](#routerselectionjitter)
@@ -3414,25 +3414,6 @@ CSL clock accuracy: 20
 CSL uncertainty: 5
 ```
 
-### parentpriority
-
-Get the assigned parent priority value, -2 means not assigned.
-
-```bash
-> parentpriority
-1
-Done
-```
-
-### parentpriority \<parentpriority\>
-
-Set the assigned parent priority value: 1, 0, -1 or -2.
-
-```bash
-> parentpriority 1
-Done
-```
-
 ### partitionid
 
 Get the Thread Network Partition ID.
@@ -3921,6 +3902,77 @@ Cost: 0
 Link Quality In: 3
 Link Quality Out: 3
 Age: 7
+Done
+```
+
+### routeradmin
+
+Get the Router Administration configuration details.
+
+```bash
+> routeradmin
+routeradmin
+routeradmin options:0, parentpriorityhigh:0, parentprioritylow:4
+routeradmin upthreshold:16, updelaymin:0, updelayjitter:120
+routeradmin downthreshold:23, downdelaymin:0, downdelayjitter:120
+Done
+```
+
+### routeradmin \<AllParameters...\>
+
+AllParameters (in order):
+
+- options (bitmap): 0 (default), 1 (managed), 2 (router-ineligible)
+- parentpriorityhigh: 0=disabled | 1=1/4 | 2=1/3 | 3=1/2 | 4=2/3 | 5=3/4 | 6=full | 14=unchanged | 15=use-default
+- parentprioritymed: 0=disabled | 1=1/4 | 2=1/3 | 3=1/2 | 4=2/3 | 5=3/4 | 6=full | 14=unchanged | 15=use-default
+- upthreshold: 0-MaxRouters(32) | 254=unchanged | 255=use-default
+- updelaymin: 0-600 seconds | 65534=unchanged | 65535=use-default
+- updelayjitter: 0-1200 seconds | 65534=unchanged | 65535=use-default
+- downthreshold: 0-MaxRouters(32) | 254=unchanged | 255=use-default
+- downdelaymin: 0-600 seconds | 65534=unchanged | 65535=use-default
+- downdelayjitter: 0-1200 seconds | 65534=unchanged | 65535=use-default
+
+Ineligible router configuration profile:
+
+```bash
+> routeradmin 2 14 14 254 65534 65534 254 65534 65534
+Done
+> routeradmin
+routeradmin options:2, parentpriorityhigh:0, parentprioritylow:4
+routeradmin upthreshold:16, updelaymin:0, updelayjitter:120
+routeradmin downthreshold:23, downdelaymin:0, downdelayjitter:120
+Done
+```
+
+Default router configuration profile (all use-default codes):
+
+```bash
+> routeradmin 0 15 15 255 65535 65535 255 65535 65535
+Done
+> routeradmin
+routeradmin options:0, parentpriorityhigh:0, parentprioritylow:4
+routeradmin upthreshold:16, updelaymin:0, updelayjitter:120
+routeradmin downthreshold:23, downdelaymin:0, downdelayjitter:120
+Done
+```
+
+Managed "Reluctant" router configuration profile:
+
+```bash
+> routeradmin 1 0 2 0 60 120 17 0 60
+routeradmin options:1, parentpriorityhigh:0, parentprioritylow:2
+routeradmin upthreshold:0, updelaymin:60, updelayjitter:120
+routeradmin downthreshold:17, downdelaymin:0, downdelayjitter:60
+Done
+```
+
+Managed "Preferred" router configuration profile:
+
+```bash
+> routeradmin 1 3 4 25 300 300 30 300 300
+routeradmin options:1, parentpriorityhigh:3, parentprioritylow:4
+routeradmin upthreshold:25, updelaymin:300, updelayjitter:300
+routeradmin downthreshold:30, downdelaymin:300, downdelayjitter:300
 Done
 ```
 

@@ -192,14 +192,14 @@ public:
         kUpgradeReasonHaveChildIdRequestFlag    = (1U << 1), ///< Pending Child ID Request
         kUpgradeReasonParentPartitionChangeFlag = (1U << 2), ///< Parent Partition change
         kUpgradeReasonBorderRouterRequestFlag   = (1U << 3), ///< Border Router
-        // (1U << 4) Reserved for adding kUpgradeReasonManagedRouterFlag in future changes
+        kUpgradeReasonManagedRouterFlag         = (1U << 4), ///< Managed Router
     };
     enum StatusTlvEnum : uint8_t
     {
-        kReasonTooFewRouters         = 2, ///< Too few routers.  Only used if no other bits are set.
-        kReasonHaveChildIdRequest    = 3, ///< Have pending Child ID Request.
-        kReasonParentPartitionChange = 4, ///< Parent Partition change.
-        kReasonBorderRouterRequest   = 5, ///< Device is Border Router.
+        kReasonTooFewRouters                        = 2, ///< Too few routers.  Only used if no other bits are set.
+        kReasonHaveChildIdRequest                   = 3, ///< Have pending Child ID Request.
+        kReasonParentPartitionChangeOrManagedRouter = 4, ///< Parent Partition change or Managed Router.
+        kReasonBorderRouterRequest                  = 5, ///< Device is Border Router.
     };
 
     RouterUpgradeReasonFlags() = default;
@@ -937,6 +937,88 @@ private:
     void IncrementNumForLinkQuality(uint8_t aLinkQuality);
 };
 
+#if OPENTHREAD_FTD
+/**
+ * Additional definitions and operations for Router Administration.
+ */
+class RouterAdministrationConfiguration : public otRouterAdministrationConfiguration
+{
+public:
+    /** +1 (High) Parent Priority disabled by default. */
+    static constexpr otCapacityThresholdEnum kParentPriorityHighThresholdDefault = OT_CAPACITY_USED_NONE;
+    /** 0 (Medium) Parent Priority at <= 2/3 full by default */
+    static constexpr otCapacityThresholdEnum kParentPriorityMediumThresholdDefault = OT_CAPACITY_USED_TWO_THIRDS;
+
+    static constexpr int8_t kParentPriorityHigh        = 1;
+    static constexpr int8_t kParentPriorityMedium      = 0;
+    static constexpr int8_t kParentPriorityLow         = -1;
+    static constexpr int8_t kParentPriorityUnspecified = -2;
+
+    /**
+     * Default upgrade threshold value
+     *
+     * This is also used when the leader handles the @ref RouterUpgradeReason::kReasonTooFewRouters reason
+     * when handling an Address Solicit request, to maintain backwards compatibility.
+     */
+    static constexpr uint8_t kRouterUpgradeThresholdDefault   = 16;
+    static constexpr uint8_t kRouterDowngradeThresholdDefault = 23; ///< Default downgrade threshold value
+
+    static constexpr uint16_t kRouterTransitionMinimumDefault = 0;   ///< (in sec) Default transition minimum
+    static constexpr uint16_t kRouterTransitionJitterDefault  = 120; ///< (in sec) Default transition timing jitter
+
+    RouterAdministrationConfiguration();
+
+    /**
+     * Applies the Router Administration Configuration if all parameters are valid, replacing any special codes.
+     *
+     * @param[in]  aNewConfiguration The the otRouterAdministrationConfiguration to apply.
+     *
+     * @retval kErrorNone         Successfully applied the values.
+     * @retval kErrorInvalidArgs  Some parameters are not valid or special codes.  No changes have been applied.
+     */
+    Error ApplyRouterAdministration(const otRouterAdministrationConfiguration &aNewConfiguration);
+
+    /**
+     * Get the parent priority from the current child capacity.
+     */
+    int8_t GetParentPriority(uint16_t aMaxChildrenAllowed, uint16_t aCurrentValidChildren) const;
+
+    bool IsManagedRouter(void) const
+    {
+        return (mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_OPTIONS_MANAGED_MASK);
+    }
+
+    bool IsRouterEligible(void) const
+    {
+        return !(mRouterAdministrationOptions & OT_ROUTER_ADMINISTRATION_OPTIONS_INELIGIBLE_MASK);
+    }
+    void SetRouterEligibleStatus(bool newStatus);
+
+private:
+    template <typename T, T aUseDefaultCode>
+    static void ApplyCodeOrValue(T &aParameterReference, T aValueToApply, T aMaxValidValue, T aDefaultValue);
+
+    static void ApplyCapacityCodeOrValue(otCapacityThresholdEnum &aParameterReference,
+                                         otCapacityThresholdEnum  aValueToApply,
+                                         otCapacityThresholdEnum  aDefaultValue);
+    static void ApplyRoleThresholdCodeOrValue(uint8_t &aParameterReference,
+                                              uint8_t  aValueToApply,
+                                              uint8_t  aDefaultValue);
+    static void ApplyDelayMinimumCodeOrValue(uint16_t &aParameterReference, uint16_t aValueToApply);
+    static void ApplyDelayJitterCodeOrValue(uint16_t &aParameterReference, uint16_t aValueToApply);
+
+    template <typename T, T aUnchangedCode, T aUseDefaultCode>
+    static bool IsCodeOrValue(T aValueToApply, T aMaxValidValue);
+
+    static bool IsCapacityCodeOrValue(otCapacityThresholdEnum aValueToApply);
+    static bool IsRoleThresholdCodeOrValue(uint8_t aValueToApply);
+    static bool IsDelayMinimumCodeOrValue(uint16_t aValueToApply);
+    static bool IsDelayJitterCodeOrValue(uint16_t aValueToApply);
+
+    static int16_t GetThresholdOfMaximum(otCapacityThresholdEnum aCapacityThreshold, uint16_t aFullMaxCount);
+}; // RouterAdministration
+#endif /* OPENTHREAD_FTD */
+
 /**
  * Represents a MLE Key Material
  */
@@ -1069,6 +1151,9 @@ DefineMapEnum(otDeviceRole, Mle::DeviceRole);
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_MLE_DEVICE_PROPERTY_LEADER_WEIGHT_ENABLE
 DefineCoreType(otDeviceProperties, Mle::DeviceProperties);
 DefineMapEnum(otPowerSupply, Mle::DeviceProperties::PowerSupply);
+#endif
+#if OPENTHREAD_FTD
+DefineCoreType(otRouterAdministrationConfiguration, Mle::RouterAdministrationConfiguration);
 #endif
 #if OPENTHREAD_CONFIG_P2P_ENABLE && OPENTHREAD_CONFIG_WAKEUP_COORDINATOR_ENABLE
 DefineCoreType(otP2pRequest, Mle::P2pRequest);

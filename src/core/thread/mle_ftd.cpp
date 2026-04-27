@@ -81,7 +81,7 @@ bool Mle::DetermineIfRouterRoleAllowed(void) const
     bool                  allowed   = false;
     const SecurityPolicy &secPolicy = Get<KeyManager>().GetSecurityPolicy();
 
-    VerifyOrExit(mRouterEligible && IsFullThreadDevice());
+    VerifyOrExit(mRouterAdministrationConfiguration.IsRouterEligible() && IsFullThreadDevice());
 
 #if OPENTHREAD_CONFIG_THREAD_VERSION == OT_THREAD_VERSION_1_1
     VerifyOrExit(secPolicy.mRoutersEnabled);
@@ -186,9 +186,9 @@ Error Mle::SetRouterEligible(bool aEligible)
         VerifyOrExit(!aEligible, error = kErrorNotCapable);
     }
 
-    VerifyOrExit(aEligible != mRouterEligible);
+    VerifyOrExit(aEligible != mRouterAdministrationConfiguration.IsRouterEligible());
 
-    mRouterEligible = aEligible;
+    mRouterAdministrationConfiguration.SetRouterEligibleStatus(aEligible);
     UpdateRouterRoleAllowed(kReasonConfigParameterChanged);
 
 exit:
@@ -379,7 +379,8 @@ void Mle::HandleChildStart(void)
     case kSamePartition:
         if (HasChildren())
         {
-            IgnoreError(BecomeRouter(RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag));
+            IgnoreError(
+                BecomeRouter(GetUpgradeReasons(RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag)));
         }
 
         break;
@@ -420,7 +421,7 @@ void Mle::HandleChildStart(void)
 
 exit:
 
-    if (mRouterTable.GetActiveRouterCount() >= mRouterUpgradeThreshold &&
+    if (mRouterTable.GetActiveRouterCount() >= mRouterAdministrationConfiguration.mRouterUpgradeParameters.mThreshold &&
         (!IsRouterIdValid(mPreviousRouterId) || !HasChildren()))
     {
         SetRouterId(kInvalidRouterId);
@@ -3550,9 +3551,9 @@ exit:
 Error Mle::SetRouterSelectionJitter(uint16_t aRouterJitter)
 {
     Error error = kErrorNone;
-    VerifyOrExit(aRouterJitter <= kRouterTransitionDelayMax, error = kErrorInvalidArgs);
-    mRouterUpgradeDelayJitter   = aRouterJitter;
-    mRouterDowngradeDelayJitter = aRouterJitter;
+    VerifyOrExit(aRouterJitter <= OT_ROLE_TRANSITION_DELAY_JITTER_LIMIT, error = kErrorInvalidArgs);
+    mRouterAdministrationConfiguration.mRouterUpgradeParameters.mDelayJitter   = aRouterJitter;
+    mRouterAdministrationConfiguration.mRouterDowngradeParameters.mDelayJitter = aRouterJitter;
 exit:
     return error;
 }
@@ -3667,15 +3668,17 @@ void Mle::ProcessAddressSolicit(AddrSolicitInfo &aInfo)
     switch (aInfo.mStatusTlvReason)
     {
     case RouterUpgradeReasonFlags::kReasonTooFewRouters:
-        VerifyOrExit(mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold);
+        VerifyOrExit(mRouterTable.GetActiveRouterCount() <
+                     RouterAdministrationConfiguration::kRouterUpgradeThresholdDefault);
         break;
 
     case RouterUpgradeReasonFlags::kReasonHaveChildIdRequest:
-    case RouterUpgradeReasonFlags::kReasonParentPartitionChange:
+    case RouterUpgradeReasonFlags::kReasonParentPartitionChangeOrManagedRouter:
         break;
 
     case RouterUpgradeReasonFlags::kReasonBorderRouterRequest:
-        if ((mRouterTable.GetActiveRouterCount() >= mRouterUpgradeThreshold) &&
+        if ((mRouterTable.GetActiveRouterCount() >=
+             RouterAdministrationConfiguration::kRouterUpgradeThresholdDefault) &&
             (Get<NetworkData::Leader>().CountBorderRouters(NetworkData::kRouterRoleOnly) >=
              kRouterUpgradeBorderRouterRequestThreshold))
         {
@@ -3797,24 +3800,13 @@ exit:
 
 void Mle::DetermineConnectivity(Connectivity &aConnectivity) const
 {
+    uint16_t maxChildrenAllowed = mChildTable.GetMaxChildrenAllowed();
+    uint16_t numValidChildren   = mChildTable.GetNumChildren(Child::kInStateValid);
+
     aConnectivity.Clear();
 
-    aConnectivity.mParentPriority = GetAssignParentPriority();
-
-    if (aConnectivity.mParentPriority == kParentPriorityUnspecified)
-    {
-        uint16_t numChildren = mChildTable.GetNumChildren(Child::kInStateValid);
-        uint16_t maxAllowed  = mChildTable.GetMaxChildrenAllowed();
-
-        if ((maxAllowed - numChildren) < (maxAllowed / 3))
-        {
-            aConnectivity.mParentPriority = kParentPriorityLow;
-        }
-        else
-        {
-            aConnectivity.mParentPriority = kParentPriorityMedium;
-        }
-    }
+    aConnectivity.mParentPriority =
+        mRouterAdministrationConfiguration.GetParentPriority(maxChildrenAllowed, numValidChildren);
 
     if (IsChild())
     {
@@ -3892,9 +3884,11 @@ bool Mle::ShouldRouterDowngrade(void) const
     VerifyOrExit(IsRouter());
 
     VerifyOrExit(!mBlockDowngrade);
-    VerifyOrExit(activeRouterCount > mRouterDowngradeThreshold);
+    VerifyOrExit(activeRouterCount > mRouterAdministrationConfiguration.mRouterDowngradeParameters.mThreshold);
 
-    excessRouters = (activeRouterCount > mRouterDowngradeThreshold) ? activeRouterCount - mRouterDowngradeThreshold : 0;
+    excessRouters = (activeRouterCount > mRouterAdministrationConfiguration.mRouterDowngradeParameters.mThreshold)
+                        ? activeRouterCount - mRouterAdministrationConfiguration.mRouterDowngradeParameters.mThreshold
+                        : 0;
     VerifyOrExit(mChildTable.GetNumChildren(Child::kInStateValid) < excessRouters * 3);
 
     // Check that we have at least `kMinDowngradeNeighbors`
@@ -3929,11 +3923,16 @@ RouterUpgradeReasonFlags Mle::GetUpgradeReasons(
     reasonFlags |= aImmediateUpgradeReason;
 
     // Additional reasons that do not upgrade immediately
-    if (mRouterTable.GetActiveRouterCount() < mRouterUpgradeThreshold)
+    if (mRouterTable.GetActiveRouterCount() < mRouterAdministrationConfiguration.mRouterUpgradeParameters.mThreshold)
     {
         reasonFlags |= RouterUpgradeReasonFlags::kUpgradeReasonTooFewRoutersFlag;
     }
-    // Future changes will include additional changes here for kUpgradeReasonManagedRouterFlag
+
+    // Also add the managed flag, if any other upgrade reason flags are set
+    if (reasonFlags.HasReason() && mRouterAdministrationConfiguration.IsManagedRouter())
+    {
+        reasonFlags |= RouterUpgradeReasonFlags::kUpgradeReasonManagedRouterFlag;
+    }
 
 exit:
     return reasonFlags;
@@ -4022,19 +4021,6 @@ void Mle::RemoveChildren(void)
     }
 }
 
-Error Mle::SetAssignParentPriority(int8_t aParentPriority)
-{
-    Error error = kErrorNone;
-
-    VerifyOrExit(aParentPriority <= kParentPriorityHigh && aParentPriority >= kParentPriorityUnspecified,
-                 error = kErrorInvalidArgs);
-
-    mParentPriority = aParentPriority;
-
-exit:
-    return error;
-}
-
 Error Mle::GetMaxChildTimeout(uint32_t &aTimeout) const
 {
     Error error = kErrorNotFound;
@@ -4098,7 +4084,7 @@ const char *Mle::RouterUpgradeReasonToString(RouterUpgradeReasonFlags::StatusTlv
     case RouterUpgradeReasonFlags::kReasonHaveChildIdRequest:
         str = "HaveChildIdRequest";
         break;
-    case RouterUpgradeReasonFlags::kReasonParentPartitionChange:
+    case RouterUpgradeReasonFlags::kReasonParentPartitionChangeOrManagedRouter:
         str = "ParentPartitionChange";
         break;
     case RouterUpgradeReasonFlags::kReasonBorderRouterRequest:
@@ -4128,21 +4114,21 @@ void Mle::RouterRoleTransition::ClearTransition(void)
     mTransition = kNotTransitioning;
 }
 
-void Mle::RouterRoleTransition::StartTransition(uint16_t   aRouterTransitionMinimum,
-                                                uint16_t   aRouterTransitionJitter,
-                                                Transition aTransitionType)
+void Mle::RouterRoleTransition::StartTransition(const otRoleTransitionType &aRouterTransition,
+                                                Transition                  aTransitionType)
 {
-    uint16_t minimumDelay = Min<uint16_t>(aRouterTransitionMinimum, kRouterTransitionDelayMax);
-    if (aRouterTransitionJitter == 0)
+    uint16_t minimumDelay = Min<uint16_t>(aRouterTransition.mDelayMinimum, OT_ROLE_TRANSITION_DELAY_MINIMUM_LIMIT);
+    if (aRouterTransition.mDelayJitter == 0)
     {
         mTimeout = minimumDelay;
     }
     else
     {
         // Note: GetUint16InRange() returns a value in the range [minimumDelay, delayUpperLimit)
-        uint16_t delayUpperLimit = static_cast<uint16_t>(Min<uint32_t>(
-            static_cast<uint32_t>(minimumDelay) + aRouterTransitionJitter + 1, kRouterTransitionDelayMax + 1));
-        mTimeout                 = Random::NonCrypto::GetUint16InRange(minimumDelay, delayUpperLimit);
+        uint16_t delayUpperLimit = static_cast<uint16_t>(
+            Min<uint32_t>(static_cast<uint32_t>(minimumDelay) + aRouterTransition.mDelayJitter + 1,
+                          OT_ROLE_TRANSITION_DELAY_JITTER_LIMIT + 1));
+        mTimeout = Random::NonCrypto::GetUint16InRange(minimumDelay, delayUpperLimit);
     }
 
     mTransition = aTransitionType;

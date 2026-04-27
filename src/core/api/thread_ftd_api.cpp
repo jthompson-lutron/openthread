@@ -149,7 +149,26 @@ uint8_t otThreadGetRouterUpgradeThreshold(otInstance *aInstance)
 
 void otThreadSetRouterUpgradeThreshold(otInstance *aInstance, uint8_t aThreshold)
 {
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterUpgradeThreshold(aThreshold);
+    otRouterAdministrationConfiguration configuration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        {OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, aThreshold},
+        OT_ROLE_TRANSITION_ALL_UNCHANGED,
+    };
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(configuration));
+}
+
+otRouterAdministrationConfiguration otThreadGetCurrentRouterAdministration(otInstance *aInstance)
+{
+    return AsCoreType(aInstance).Get<Mle::Mle>().GetCurrentRouterAdministration();
+}
+
+otError otThreadApplySpecifiedRouterAdministration(otInstance                                *aInstance,
+                                                   const otRouterAdministrationConfiguration *aConfiguration)
+{
+    AssertPointerIsNotNull(aConfiguration);
+    return AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(*aConfiguration);
 }
 
 uint8_t otThreadGetChildRouterLinks(otInstance *aInstance)
@@ -176,8 +195,8 @@ exit:
 
 otError otThreadBecomeRouter(otInstance *aInstance)
 {
-    return AsCoreType(aInstance).Get<Mle::Mle>().BecomeRouter(
-        Mle::RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag);
+    return AsCoreType(aInstance).Get<Mle::Mle>().BecomeRouter(AsCoreType(aInstance).Get<Mle::Mle>().GetUpgradeReasons(
+        Mle::RouterUpgradeReasonFlags::kUpgradeReasonHaveChildIdRequestFlag));
 }
 
 otError otThreadBecomeLeader(otInstance *aInstance)
@@ -192,20 +211,35 @@ uint8_t otThreadGetRouterDowngradeThreshold(otInstance *aInstance)
 
 void otThreadSetRouterDowngradeThreshold(otInstance *aInstance, uint8_t aThreshold)
 {
-    AsCoreType(aInstance).Get<Mle::Mle>().SetRouterDowngradeThreshold(aThreshold);
+    otRouterAdministrationConfiguration configuration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        OT_ROLE_TRANSITION_ALL_UNCHANGED,
+        {OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, aThreshold},
+    };
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(configuration));
 }
 
 uint8_t otThreadGetRouterSelectionJitter(otInstance *aInstance)
 {
     uint16_t routerSelectionJitter = AsCoreType(aInstance).Get<Mle::Mle>().GetRouterSelectionJitter();
-    return (routerSelectionJitter > OT_API_MAX_ROUTER_SELECTION_JITTER) ? OT_API_MAX_ROUTER_SELECTION_JITTER
-                                                                        : static_cast<uint8_t>(routerSelectionJitter);
+    return (routerSelectionJitter > OT_API_DEPRECATED_MAX_ROUTER_SELECTION_JITTER)
+               ? OT_API_DEPRECATED_MAX_ROUTER_SELECTION_JITTER
+               : static_cast<uint8_t>(routerSelectionJitter);
 }
 
 void otThreadSetRouterSelectionJitter(otInstance *aInstance, uint8_t aRouterJitter)
 {
     // Values within a uint8_t range should not cause errors, so they are ignored to maintain backwards compatibility
-    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().SetRouterSelectionJitter(aRouterJitter));
+    otRouterAdministrationConfiguration configuration{
+        OT_ROUTER_ADMINISTRATION_OPTIONS_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        OT_CAPACITY_USED_UNCHANGED_CODE,
+        {OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, aRouterJitter, OT_ACTIVE_ROUTER_THRESHOLD_UNCHANGED_CODE},
+        {OT_ROLE_TRANSITION_DELAY_UNCHANGED_CODE, aRouterJitter, OT_ACTIVE_ROUTER_THRESHOLD_UNCHANGED_CODE},
+    };
+    IgnoreError(AsCoreType(aInstance).Get<Mle::Mle>().ApplyRouterAdministration(configuration));
 }
 
 otError otThreadGetChildInfoById(otInstance *aInstance, uint16_t aChildId, otChildInfo *aChildInfo)
@@ -308,16 +342,6 @@ exit:
     return error;
 }
 #endif
-
-int8_t otThreadGetParentPriority(otInstance *aInstance)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().GetAssignParentPriority();
-}
-
-otError otThreadSetParentPriority(otInstance *aInstance, int8_t aParentPriority)
-{
-    return AsCoreType(aInstance).Get<Mle::Mle>().SetAssignParentPriority(aParentPriority);
-}
 
 void otThreadRegisterNeighborTableCallback(otInstance *aInstance, otNeighborTableCallback aCallback)
 {

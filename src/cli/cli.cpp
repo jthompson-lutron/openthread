@@ -5286,30 +5286,6 @@ exit:
     return error;
 }
 
-#if OPENTHREAD_FTD
-/**
- * @cli parentpriority (get,set)
- * @code
- * parentpriority
- * 1
- * Done
- * @endcode
- * @code
- * parentpriority 1
- * Done
- * @endcode
- * @cparam parentpriority [@ca{parentpriority}]
- * @par
- * Gets or sets the assigned parent priority value: 1, 0, -1 or -2. -2 means not assigned.
- * @sa otThreadGetParentPriority
- * @sa otThreadSetParentPriority
- */
-template <> otError Interpreter::Process<Cmd("parentpriority")>(Arg aArgs[])
-{
-    return ProcessGetSet(aArgs, otThreadGetParentPriority, otThreadSetParentPriority);
-}
-#endif
-
 #if OPENTHREAD_FTD && OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
 template <> otError Interpreter::Process<Cmd("routeridrange")>(Arg *aArgs)
 {
@@ -6064,6 +6040,115 @@ template <> otError Interpreter::Process<Cmd("router")>(Arg aArgs[])
 exit:
     return error;
 }
+
+template <> otError Interpreter::Process<Cmd("routeradmin")>(Arg aArgs[])
+{
+    otError error = OT_ERROR_NONE;
+
+    /**
+     * @cli routeradmin
+     * @code
+     * Done
+     * > routeradmin
+     * routeradmin profile: Default
+     * routeradmin options:0, parentpriorityhigh:0, parentprioritylow:4
+     * routeradmin upthreshold:16, updelaymin:0, updelayjitter:120
+     * routeradmin downthreshold:23, downdelaymin:0, downdelayjitter:120
+     * Done
+     * @endcode
+     * @par
+     * Get the Router Administration Configuration details.
+     */
+    if (aArgs[0].IsEmpty())
+    {
+        otRouterAdministrationConfiguration routerAdministration =
+            otThreadGetCurrentRouterAdministration(GetInstancePtr());
+
+        // `> routeradmin`
+        OutputLine("routeradmin options:%d, parentpriorityhigh:%d, parentprioritymed:%d",
+                   routerAdministration.mRouterAdministrationOptions, routerAdministration.mParentPriorityHighThreshold,
+                   routerAdministration.mParentPriorityMediumThreshold);
+        OutputLine("routeradmin upthreshold:%d, updelaymin:%d, updelayjitter:%d",
+                   routerAdministration.mRouterUpgradeParameters.mThreshold,
+                   routerAdministration.mRouterUpgradeParameters.mDelayMinimum,
+                   routerAdministration.mRouterUpgradeParameters.mDelayJitter);
+        OutputLine("routeradmin downthreshold:%d, downdelaymin:%d, downdelayjitter:%d",
+                   routerAdministration.mRouterDowngradeParameters.mThreshold,
+                   routerAdministration.mRouterDowngradeParameters.mDelayMinimum,
+                   routerAdministration.mRouterDowngradeParameters.mDelayJitter);
+    }
+    /**
+     * @cli routeradmin
+     * @code
+     * # Ineligible router configuration profile
+     * > routeradmin 2 14 14 254 65534 65534 254 65534 65534
+     * Done
+     * # Default router configuration profile (all use-default codes)
+     * > routeradmin 0 15 15 255 65535 65535 255 65535 65535
+     * Done
+     * # "Reluctant" router configuration profile (Managed)
+     * > routeradmin 1 0 2 0 60 120 17 0 60
+     * Done
+     * # "Preferred" router configuration profile (Managed)
+     * > routeradmin 1 3 4 25 300 300 30 300 300
+     * Done
+     * @endcode
+     * @cparam routeradmin @ca{0-2} @ca{0-6}|@ca{14}|@ca{15} @ca{0-6}|@ca{14}|@ca{15}
+     * @ca{0-MaxRouters,254,255} @ca{0-600,65534,65535} @ca{0-600,65534,65535}
+     * @ca{0-MaxRouters,254,255} @ca{0-1200,65534,65535} @ca{0-600,65534,65535}
+     * @par
+     * Apply the Router Administration with specified values.
+     * Parameters (listed in order):
+     * * options: 0 (default), 1 (managed), 2 (router-ineligible)
+     * * parentpriorityhigh: 0=disabled | 1=1/4 | 2=1/3 | 3=1/2 | 4=2/3 | 5=3/4 | 6=full | 14=unchanged | 15=use-default
+     * * parentprioritymed: 0=disabled | 1=1/4 | 2=1/3 | 3=1/2 | 4=2/3 | 5=3/4 | 6=full | 14=unchanged | 15=use-default
+     * * upthreshold: 0-MaxRouters(32) | 254=unchanged | 255=use-default
+     * * updelaymin: 0-600 seconds | 65534=unchanged | 65535=use-default
+     * * updelayjitter: 0-1200 seconds | 65534=unchanged | 65535=use-default
+     * * downthreshold: 0-MaxRouters(32) | 254=unchanged | 255=use-default
+     * * downdelaymin: 0-600 seconds | 65534=unchanged | 65535=use-default
+     * * downdelayjitter: 0-1200 seconds | 65534=unchanged | 65535=use-default
+     */
+    else if ((!aArgs[1].IsEmpty() && !aArgs[2].IsEmpty() && !aArgs[3].IsEmpty() && !aArgs[4].IsEmpty() &&
+              !aArgs[5].IsEmpty() && !aArgs[6].IsEmpty() && !aArgs[7].IsEmpty() && !aArgs[8].IsEmpty()) &&
+             aArgs[9].IsEmpty())
+    {
+        otRouterAdministrationConfiguration routerAdministration;
+        uint8_t                             parameterU8;
+
+        // Options
+        SuccessOrExit(error = aArgs[0].ParseAsUint8(routerAdministration.mRouterAdministrationOptions));
+
+        // Parent Priorities
+        SuccessOrExit(error = aArgs[1].ParseAsUint8(parameterU8));
+        VerifyOrExit(parameterU8 <= OT_CAPACITY_USED_DEFAULT_CODE, error = OT_ERROR_INVALID_ARGS);
+        routerAdministration.mParentPriorityHighThreshold = static_cast<otCapacityThresholdEnum>(parameterU8);
+        SuccessOrExit(error = aArgs[2].ParseAsUint8(parameterU8));
+        VerifyOrExit(parameterU8 <= OT_CAPACITY_USED_DEFAULT_CODE, error = OT_ERROR_INVALID_ARGS);
+        routerAdministration.mParentPriorityMediumThreshold = static_cast<otCapacityThresholdEnum>(parameterU8);
+
+        // Upgrade
+        SuccessOrExit(error = aArgs[3].ParseAsUint8(routerAdministration.mRouterUpgradeParameters.mThreshold));
+        SuccessOrExit(error = aArgs[4].ParseAsUint16(routerAdministration.mRouterUpgradeParameters.mDelayMinimum));
+        SuccessOrExit(error = aArgs[5].ParseAsUint16(routerAdministration.mRouterUpgradeParameters.mDelayJitter));
+
+        // Downgrade
+        SuccessOrExit(error = aArgs[6].ParseAsUint8(routerAdministration.mRouterDowngradeParameters.mThreshold));
+        SuccessOrExit(error = aArgs[7].ParseAsUint16(routerAdministration.mRouterDowngradeParameters.mDelayMinimum));
+        SuccessOrExit(error = aArgs[8].ParseAsUint16(routerAdministration.mRouterDowngradeParameters.mDelayJitter));
+
+        // Only apply settings if all were successfully parsed
+        error = otThreadApplySpecifiedRouterAdministration(GetInstancePtr(), &routerAdministration);
+    }
+    else
+    {
+        error = OT_ERROR_INVALID_COMMAND;
+    }
+
+exit:
+    return error;
+}
+
 /**
  * @cli routerdowngradethreshold (get,set)
  * @code routerdowngradethreshold
@@ -8648,7 +8733,6 @@ otError Interpreter::ProcessCommand(Arg aArgs[])
         CmdEntry("panid"),
         CmdEntry("parent"),
 #if OPENTHREAD_FTD
-        CmdEntry("parentpriority"),
         CmdEntry("partitionid"),
 #endif
 #if OPENTHREAD_CONFIG_PING_SENDER_ENABLE
@@ -8689,6 +8773,7 @@ otError Interpreter::ProcessCommand(Arg aArgs[])
 #endif
 #if OPENTHREAD_FTD
         CmdEntry("router"),
+        CmdEntry("routeradmin"),
         CmdEntry("routerdowngradethreshold"),
         CmdEntry("routereligible"),
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE

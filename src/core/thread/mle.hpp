@@ -773,6 +773,17 @@ public:
      */
     Error SetRouterEligible(bool aEligible);
 
+    otRouterAdministrationConfiguration GetCurrentRouterAdministration(void)
+    {
+        return static_cast<otRouterAdministrationConfiguration>(mRouterAdministrationConfiguration);
+    }
+    Error ApplyRouterAdministration(const otRouterAdministrationConfiguration &aConfig)
+    {
+        Error error = mRouterAdministrationConfiguration.ApplyRouterAdministration(aConfig);
+        UpdateRouterRoleAllowed(kReasonConfigParameterChanged);
+        return error;
+    }
+
     /**
      * Indicates whether the router role is currently allowed.
      *
@@ -789,7 +800,7 @@ public:
      */
     void StartRouterRoleUpgradeTransition(void)
     {
-        mRouterRoleTransition.StartTransition(mRouterUpgradeDelayMinimum, mRouterUpgradeDelayJitter,
+        mRouterRoleTransition.StartTransition(mRouterAdministrationConfiguration.mRouterUpgradeParameters,
                                               RouterRoleTransition::kUpgrading);
     }
 
@@ -798,7 +809,7 @@ public:
      */
     void StartRouterRoleDowngradeTransition(void)
     {
-        mRouterRoleTransition.StartTransition(mRouterDowngradeDelayMinimum, mRouterDowngradeDelayJitter,
+        mRouterRoleTransition.StartTransition(mRouterAdministrationConfiguration.mRouterDowngradeParameters,
                                               RouterRoleTransition::kDowngrading);
     }
 
@@ -822,6 +833,23 @@ public:
      * @retval kErrorInvalidArgs    An invalid aReasonFlags was provided.
      */
     Error BecomeRouter(RouterUpgradeReasonFlags aReasonFlags);
+
+    /**
+     * Get the upgrade reason flags that apply, if a router upgrade transition or its timer should be started.
+     *
+     * Note: This checks all upgrade conditions both when the timer is started and when the upgrade is attempted but
+     * does not check `HasNeighborWithGoodLinkQuality()`, so that the runtime required by that check will only
+     * apply just before making the attempt to upgrade.
+     *
+     * @param[in] aImmediateUpgradeReason A reason to upgrade immediately or kUpgradeReasonFlagsNone by default
+     *
+     * @returns RouterUpgradeReasonFlags with one or more flags set or kUpgradeReasonFlagsNone,
+     * if no upgrade should be started
+     *
+     * @sa HasNeighborWithGoodLinkQuality
+     */
+    RouterUpgradeReasonFlags GetUpgradeReasons(RouterUpgradeReasonFlags::ReasonBitmapEnum aImmediateUpgradeReason =
+                                                   RouterUpgradeReasonFlags::kUpgradeReasonFlagsNone) const;
 
     /**
      * Specifies the leader weight check behavior used in `BecomeLeader()`.
@@ -951,7 +979,10 @@ public:
      *
      * @returns The ROUTER_SELECTION_JITTER value for upgrade transitions in seconds.
      */
-    uint16_t GetRouterSelectionJitter(void) const { return mRouterUpgradeDelayJitter; }
+    uint16_t GetRouterSelectionJitter(void) const
+    {
+        return mRouterAdministrationConfiguration.mRouterUpgradeParameters.mDelayJitter;
+    }
 
     /**
      * Sets the ROUTER_SELECTION_JITTER value for upgrade and downgrade transitions (0 to 1200 seconds).
@@ -995,28 +1026,20 @@ public:
      *
      * @returns The ROUTER_UPGRADE_THRESHOLD value.
      */
-    uint8_t GetRouterUpgradeThreshold(void) const { return mRouterUpgradeThreshold; }
-
-    /**
-     * Sets the ROUTER_UPGRADE_THRESHOLD value.
-     *
-     * @param[in]  aThreshold  The ROUTER_UPGRADE_THRESHOLD value.
-     */
-    void SetRouterUpgradeThreshold(uint8_t aThreshold) { mRouterUpgradeThreshold = aThreshold; }
+    uint8_t GetRouterUpgradeThreshold(void) const
+    {
+        return mRouterAdministrationConfiguration.mRouterUpgradeParameters.mThreshold;
+    }
 
     /**
      * Returns the ROUTER_DOWNGRADE_THRESHOLD value.
      *
      * @returns The ROUTER_DOWNGRADE_THRESHOLD value.
      */
-    uint8_t GetRouterDowngradeThreshold(void) const { return mRouterDowngradeThreshold; }
-
-    /**
-     * Sets the ROUTER_DOWNGRADE_THRESHOLD value.
-     *
-     * @param[in]  aThreshold  The ROUTER_DOWNGRADE_THRESHOLD value.
-     */
-    void SetRouterDowngradeThreshold(uint8_t aThreshold) { mRouterDowngradeThreshold = aThreshold; }
+    uint8_t GetRouterDowngradeThreshold(void) const
+    {
+        return mRouterAdministrationConfiguration.mRouterDowngradeParameters.mThreshold;
+    }
 
     /**
      * Indicates whether or not downgrading from router role to REED is blocked.
@@ -1123,23 +1146,6 @@ public:
      */
     void SetSteeringData(const Mac::ExtAddress *aExtAddress);
 #endif
-
-    /**
-     * Gets the assigned parent priority.
-     *
-     * @returns The assigned parent priority value, -2 means not assigned.
-     */
-    int8_t GetAssignParentPriority(void) const { return mParentPriority; }
-
-    /**
-     * Sets the parent priority.
-     *
-     * @param[in]  aParentPriority  The parent priority value.
-     *
-     * @retval kErrorNone           Successfully set the parent priority.
-     * @retval kErrorInvalidArgs    If the parent priority value is not among 1, 0, -1 and -2.
-     */
-    Error SetAssignParentPriority(int8_t aParentPriority);
 
     /**
      * Gets the longest MLE Timeout TLV for all active MTD children.
@@ -1387,12 +1393,6 @@ private:
     static constexpr uint8_t  kDefaultLeaderWeight           = 64;
     static constexpr uint8_t  kAlternateRloc16Timeout        = 8; // Time to use alternate RLOC16 (in sec).
 
-    static constexpr uint8_t  kRouterUpgradeThreshold         = 16;
-    static constexpr uint8_t  kRouterDowngradeThreshold       = 23;
-    static constexpr uint16_t kRouterTransitionMinimumDefault = 0;    ///< (in sec) Default transition delay minimum
-    static constexpr uint16_t kRouterTransitionJitterDefault  = 120;  ///< (in sec) Default transition delay jitter
-    static constexpr uint16_t kRouterTransitionDelayMax       = 1200; ///< (in sec) Maximum transition delay
-
     // Threshold to accept a router upgrade request with reason
     // `kBorderRouterRequest` (number of BRs acting as router in
     // Network Data).
@@ -1417,11 +1417,6 @@ private:
 
     static constexpr uint16_t kChildSupervisionDefaultIntervalForOlderVersion =
         OPENTHREAD_CONFIG_CHILD_SUPERVISION_OLDER_VERSION_CHILD_DEFAULT_INTERVAL;
-
-    static constexpr int8_t kParentPriorityHigh        = 1;
-    static constexpr int8_t kParentPriorityMedium      = 0;
-    static constexpr int8_t kParentPriorityLow         = -1;
-    static constexpr int8_t kParentPriorityUnspecified = -2;
 
 #endif // OPENTHREAD_FTD
 
@@ -2281,9 +2276,7 @@ private:
         bool IsDowngradePending(void) const { return IsDowngrading() && mTimeout == 0; }
 
         void ClearTransition(void);
-        void StartTransition(uint16_t   aRouterTransitionMinimum,
-                             uint16_t   aRouterTransitionJitter,
-                             Transition aTransitionType);
+        void StartTransition(const otRoleTransitionType &aRouterTransition, Transition aTransitionType);
 
         void     IncreaseTimeout(uint8_t aIncrement) { mTimeout += aIncrement; }
         uint16_t GetTimeout(void) const { return mTimeout; }
@@ -2551,23 +2544,6 @@ private:
      */
     bool ShouldBeginDowngradeTimer(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
 
-    /**
-     * Get the upgrade reason flags that apply, if a router upgrade transition or its timer should be started.
-     *
-     * Note: This checks all upgrade conditions both when the timer is started and when the upgrade is attempted but
-     * does not check `HasNeighborWithGoodLinkQuality()`, so that the runtime required by that check will only
-     * apply just before making the attempt to upgrade.
-     *
-     * @param[in] aImmediateUpgradeReason A reason to upgrade immediately or kUpgradeReasonFlagsNone by default
-     *
-     * @returns RouterUpgradeReasonFlags with one or more flags set or kUpgradeReasonFlagsNone,
-     * if no upgrade should be started
-     *
-     * @sa HasNeighborWithGoodLinkQuality
-     */
-    RouterUpgradeReasonFlags GetUpgradeReasons(RouterUpgradeReasonFlags::ReasonBitmapEnum aImmediateUpgradeReason =
-                                                   RouterUpgradeReasonFlags::kUpgradeReasonFlagsNone) const;
-
     bool NeighborHasComparableConnectivity(uint8_t aNeighborId, const RouteTlv &aRouteTlv) const;
 
     void HandleAdvertiseTrickleTimer(void);
@@ -2648,7 +2624,6 @@ private:
 
 #if OPENTHREAD_FTD
 
-    bool mRouterEligible : 1;
     bool mRouterRoleAllowed : 1;
     bool mBlockDowngrade : 1;
     bool mAddressSolicitPending : 1;
@@ -2661,12 +2636,7 @@ private:
     uint8_t mPreviousRouterId;
     uint8_t mNetworkIdTimeout;
 
-    uint8_t  mRouterUpgradeThreshold;
-    uint8_t  mRouterDowngradeThreshold;
-    uint16_t mRouterUpgradeDelayMinimum;
-    uint16_t mRouterUpgradeDelayJitter;
-    uint16_t mRouterDowngradeDelayMinimum;
-    uint16_t mRouterDowngradeDelayJitter;
+    RouterAdministrationConfiguration mRouterAdministrationConfiguration;
 
     uint8_t mLeaderWeight;
     uint8_t mPreviousPartitionRouterIdSequence;
@@ -2676,7 +2646,6 @@ private:
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
     uint8_t mMaxChildIpAddresses;
 #endif
-    int8_t   mParentPriority;
     uint32_t mPreviousPartitionIdRouter;
     uint32_t mPreviousPartitionId;
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE

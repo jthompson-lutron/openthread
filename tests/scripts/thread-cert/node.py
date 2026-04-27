@@ -1830,11 +1830,6 @@ class NodeImpl:
         self.send_command(cmd)
         self._expect_done()
 
-    def set_parent_priority(self, priority):
-        cmd = 'parentpriority %d' % priority
-        self.send_command(cmd)
-        self._expect_done()
-
     def get_partition_id(self):
         self.send_command('partitionid')
         return self._expect_result(r'\d+')
@@ -3820,7 +3815,7 @@ class NodeImpl:
     def get_channel_monitor_info(self) -> Dict:
         """
         Returns:
-            Dict of channel monitor info, e.g. 
+            Dict of channel monitor info, e.g.
                 {'enabled': '1',
                  'interval': '41000',
                  'threshold': '-75',
