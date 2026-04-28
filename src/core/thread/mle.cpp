@@ -80,8 +80,6 @@ Mle::Mle(Instance &aInstance)
     , mWedAttachTimer(aInstance)
 #endif
 #if OPENTHREAD_FTD
-    , mAddressSolicitPending(false)
-    , mAddressSolicitRejected(false)
     , mNetworkIdTimeout(kNetworkIdTimeout)
     , mPreviousPartitionRouterIdSequence(0)
     , mPreviousPartitionIdTimeout(0)
@@ -99,7 +97,6 @@ Mle::Mle(Instance &aInstance)
     , mAdvertiseTrickleTimer(aInstance, Mle::HandleAdvertiseTrickleTimer)
     , mChildTable(aInstance)
     , mRouterTable(aInstance)
-    , mRoleTransitioner(aInstance)
 #endif // OPENTHREAD_FTD
 #if OPENTHREAD_CONFIG_P2P_ENABLE
     , mP2p(aInstance)
@@ -294,6 +291,10 @@ void Mle::SetRole(DeviceRole aRole)
 
     SuccessOrExit(Get<Notifier>().Update(mRole, aRole, kEventThreadRoleChanged));
 
+#if OPENTHREAD_FTD
+    mRoleTransitioner.SignalRoleChanged();
+#endif
+
     LogNote("Role %s -> %s", RoleToString(oldRole), RoleToString(mRole));
 
     if ((oldRole == kRoleDetached) && IsAttached())
@@ -446,10 +447,6 @@ void Mle::Restore(void)
     // non-volatile settings after boot.
     mHasRestored = true;
 
-#if OPENTHREAD_FTD
-    mRoleTransitioner.UpdateRouterRoleAllowed(RoleTransitioner::kReasonMleInit);
-#endif
-
 exit:
     return;
 }
@@ -598,7 +595,7 @@ void Mle::SetStateDetached(void)
     Get<MeshForwarder>().SetRxOnWhenIdle(true);
     Get<Mac::Mac>().SetBeaconEnabled(false);
 #if OPENTHREAD_FTD
-    mRoleTransitioner.SetDowngradeBlocked(false);
+    mRoleTransitioner.SignalDowngradeBlocked(false);
     ClearAlternateRloc16();
     HandleDetachStart();
 #endif
@@ -719,7 +716,7 @@ Error Mle::SetDeviceMode(DeviceMode aDeviceMode)
         ClearAlternateRloc16();
     }
 
-    mRoleTransitioner.UpdateRouterRoleAllowed(RoleTransitioner::kReasonDeviceModeChanged);
+    mRoleTransitioner.SignalFtdModeChanged(IsFullThreadDevice(), mRole);
 #endif
 
     if (IsAttached())
@@ -1044,7 +1041,7 @@ void Mle::HandleNotifierEvents(Events aEvents)
 #if OPENTHREAD_FTD
     if (aEvents.Contains(kEventSecurityPolicyChanged))
     {
-        mRoleTransitioner.UpdateRouterRoleAllowed(RoleTransitioner::kReasonSecurityPolicyChanged);
+        HandleRouterRoleAllowedFromSecurityPolicy();
     }
 
     if (mRoleTransitioner.IsDowngradeBlocked() && aEvents.Contains(kEventThreadChildRemoved))
@@ -1060,7 +1057,7 @@ void Mle::HandleNotifierEvents(Events aEvents)
             }
         }
 
-        mRoleTransitioner.SetDowngradeBlocked(shouldBlock);
+        mRoleTransitioner.SignalDowngradeBlocked(shouldBlock);
     }
 #endif
 

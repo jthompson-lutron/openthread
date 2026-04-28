@@ -319,7 +319,7 @@ void DuaManager::HandleNotifierEvents(Events aEvents)
             // Wait for link establishment with neighboring routers.
             UpdateRegistrationDelay(kNewRouterRegistrationDelay);
         }
-        else if (Get<Mle::Mle>().WillBecomeRouterSoon())
+        else if (Get<Mle::Mle>().MayBecomeRouterSoon())
         {
             // Will check again in case the device decides to stay REED when jitter timeout expires.
             UpdateRegistrationDelay(Get<Mle::Mle>().GetRouterRoleTransitionTimeout() + kNewRouterRegistrationDelay + 1);
@@ -432,7 +432,7 @@ void DuaManager::PerformNextRegistration(void)
     // Only send DUA.req when necessary
 #if OPENTHREAD_CONFIG_DUA_ENABLE
 #if OPENTHREAD_FTD
-    if (!Get<Mle::Mle>().IsRouterOrLeader() && Get<Mle::Mle>().WillBecomeRouterSoon())
+    if (!Get<Mle::Mle>().IsRouterOrLeader() && Get<Mle::Mle>().MayBecomeRouterSoon())
     {
         UpdateRegistrationDelay(Get<Mle::Mle>().GetRouterRoleTransitionTimeout() + kNewRouterRegistrationDelay + 1);
         ExitNow();
