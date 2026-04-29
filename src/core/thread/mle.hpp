@@ -797,7 +797,8 @@ public:
      *
      * @param[in]  aReason  The reason for requesting a Router ID.
      *
-     * @retval kErrorNone           Successfully generated an Address Solicit message.
+     * @retval kErrorNone           Successfully generated an Address Solicit message
+     * @retval kErrorAlready        An address solicit is already in progress
      * @retval kErrorNotCapable     Device is not capable of becoming a router
      * @retval kErrorInvalidState   Thread is not enabled
      */
@@ -946,6 +947,14 @@ public:
     bool IsRouterRoleTransitionPending(void) const { return mRoleTransitioner.IsTransitionPending(); }
 
     /**
+     * Indicates whether or not router role transition (upgrade from REED or downgrade to REED) is pending.
+     *
+     * @retval TRUE    Router role transition is pending.
+     * @retval FALSE   Router role transition is not pending
+     */
+    bool IsRouterRoleUpgradePending(void) const { return mRoleTransitioner.IsUpgradePending(); }
+
+    /**
      * Returns the current timeout delay in seconds till router role transition (upgrade from REED or downgrade to
      * REED).
      *
@@ -1022,7 +1031,7 @@ public:
      * @retval TRUE   If the REED is going to become a Router soon.
      * @retval FALSE  If the REED is not going to become a Router soon.
      */
-    bool MayBecomeRouterSoon(void) const { return IsChild() && mRoleTransitioner.MayBecomeRouterSoon(); }
+    bool MayBecomeRouterSoon(void) const { return mRoleTransitioner.MayBecomeRouterSoon(); }
 
     /**
      * Removes a link to a neighbor.
@@ -2203,27 +2212,31 @@ private:
     class RoleTransitioner
     {
     public:
-        enum AddressSolicitState : uint8_t
+        enum RoleTransitionerAction : uint8_t
         {
-            kAddressSolicitStateIdle,
-            kAddressSolicitStatePending,
-            kAddressSolicitStateRejected,
+            kActionNone,
+            kActionPerformUpgrade,
+            kActionAbortUpgrade,
+            kActionPerformDowngradeToReed,
+            kActionPerformDowngradeWithRouterRoleDisallowed,
+            kActionAbortDowngrade // RJT TODO: ???
         };
 
         explicit RoleTransitioner(void);
 
-        bool IsAddressSolicitPending(void) const { return mAddressSolicitState == kAddressSolicitStatePending; }
-        bool IsAddressSolicitRejected(void) const { return mAddressSolicitState == kAddressSolicitStateRejected; }
+        bool IsAddressSolicitPending(void) const { return mTransitionerState == kChildAddressSolicitStatePending; }
+        bool IsDowngradeBlocked(void) const { return mTransitionerState == kRouterDowngradeBlocked; }
         bool IsRouterEligible(void) const { return mRouterEligible; }
         bool IsRouterRoleAllowed(void) const { return mRouterRoleAllowed; }
-        bool IsTransitionPending(void) const { return (mTimeout != 0); }
-        bool IsDowngradeBlocked(void) const { return mDowngradeBlocked; }
+        bool IsTransitionPending(void) const;
+        bool IsUpgradePending(void) const;
 
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
         bool IsCcmEnabled(void) const { return mCcmEnabled; }
         bool IsThreadVersionCheckEnabled(void) const { return mThreadVersionCheckEnabled; }
 #endif
 
+        bool MayBeginReedAdvertisments(void) const;
         bool MayBeginDowngradeTimer(uint8_t aRouterCount, uint16_t aValidChildren) const;
         bool MayCompleteTimedDowngrade(uint8_t aRouterCount) const;
         bool MayUpgrade(uint8_t aRouterCount) const;
@@ -2234,34 +2247,31 @@ private:
         uint8_t GetUpgradeThreshold(void) const { return mUpgradeThreshold; }
         uint8_t GetDowngradeThreshold(void) const { return mDowngradeThreshold; }
 
-        bool SetRouterEligibleAndGetChanged(bool aStatus);
-        bool SetRouterRoleAllowedAndGetChanged(bool aStatus);
-
         void SetJitter(uint8_t aJitter) { mJitter = aJitter; }
         void SetUpgradeThreshold(uint8_t aThreshold) { mUpgradeThreshold = aThreshold; }
         void SetDowngradeThreshold(uint8_t aThreshold) { mDowngradeThreshold = aThreshold; }
 
-        bool HandleTimeTick(void);
-        void StartRouterUpgradeIfConditionsAllow(uint8_t aRouterCount);
+        RoleTransitionerAction HandleTimeTick(uint8_t aRouterCount);
+        void                   StartRouterUpgradeIfConditionsAllow(uint8_t aRouterCount);
 
         // ------------------------
-        // Transition signals
+        // State transition signals
+        // RJT TODO: Review all signal functions
         void SignalAddressSolicitFinished(void);
-        void SignalAddressSolicitPending(void) { mAddressSolicitState = kAddressSolicitStatePending; }
-        void SignalAddressSolicitRejected(void) { mAddressSolicitState = kAddressSolicitStateRejected; }
-        void SignalBecomingRouter(void) { StopTimer(); }
-        void SignalBeginTimedLeaderDowngrade(void);
+        void SignalAddressSolicitPending(void) { mTransitionerState = kChildAddressSolicitStatePending; }
+        void SignalAddressSolicitRejected(void) { mTransitionerState = kChildAddressSolicitStateRejected; }
         void SignalBeginTimedRouterDowngrade(void);
         void SignalChildUpgradeStart(void);
-        void SignalDowngradeAborted(void);
         void SignalDowngradeBlocked(bool aShouldBlock);
-        void SignalRoleChanged(void);
+        void SignalDowngradeToReedPending(void) { mTransitionerState = kRouterDowngradeToReedPending; }
+        void SignalRoleChanged(DeviceRole aRole);
+        void SignalUpgradeAttemptFailed(void) { mTransitionerState = kChildIdle; }
 
         // ------------------------
         // State transition signals affecting the Router role allowed status
-        void SignalFtdModeChanged(bool aIsFtdMode, DeviceRole aRole);
-        void SignalRouterEligible(bool aEligible, DeviceRole aRole);
-        void SignalRouterRoleAllowedBySecurityPolicy(bool aAllowed, DeviceRole aRole);
+        void SignalFtdModeChanged(bool aIsFtdMode);
+        void SignalRouterEligible(bool aEligible);
+        void SignalRouterRoleAllowedBySecurityPolicy(bool aAllowed);
 
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
         void SetCcmEnabled(bool aCcmEnabled) { mCcmEnabled = aCcmEnabled; }
@@ -2272,9 +2282,28 @@ private:
 #endif
 
     private:
+        /** Transition substates of @ref DeviceRole */
+        enum RoleTransitionerState : uint8_t
+        {
+            kInit,
+            kDetached,
+            kChildIdle,
+            kChildUpgradePending,
+            kChildUpgradeTimerStarted,
+            kChildAddressSolicitStatePending,
+            kChildAddressSolicitStateRejected,
+            kRouterIdle,
+            kRouterDowngradeToReedPending,
+            kRouterDowngradeBlocked,
+            kRouterDowngradeTimerStarted,
+            kRouterDisallowedTimerStarted,
+            kLeaderIdle,
+            kLeaderDisallowedTimerStarted,
+        };
+
         void BeginTimer(void);
-        void StopTimer(void);
-        void SignalRouterRoleAllowedUpdate(DeviceRole aRole);
+        void BeginLeaderDowngradeTimer(void);
+        void SignalRouterRoleAllowedUpdate(void);
 
         static constexpr uint8_t kMaxDelayToTransitionSoon = 10;
 
@@ -2289,13 +2318,12 @@ private:
         bool mRouterEligible : 1;    ///< Router Eligible configuration affecting the role allowed status
         bool mUsingFtdMode : 1;      ///< FTD mode
         bool mRouterRoleAllowedBySecurityPolicy : 1; ///< Cached state of the security policy router role allowed status
-        bool mDowngradeBlocked : 1;                  ///< Router role blocked from downgrading
 #if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
         bool mCcmEnabled : 1;                ///< Whether to allow the security policy CCM commissioned check
         bool mThreadVersionCheckEnabled : 1; ///< Whether to allow the security policy version check
 #endif
 
-        AddressSolicitState mAddressSolicitState;
+        RoleTransitionerState mTransitionerState;
 
         uint8_t mTimeout;
         uint8_t mJitter;
@@ -2616,10 +2644,6 @@ private:
 
 #if OPENTHREAD_FTD
 
-#if OPENTHREAD_CONFIG_REFERENCE_DEVICE_ENABLE
-    bool mCcmEnabled : 1;
-    bool mThreadVersionCheckEnabled : 1;
-#endif
     uint8_t mRouterId;
     uint8_t mPreviousRouterId;
     uint8_t mNetworkIdTimeout;

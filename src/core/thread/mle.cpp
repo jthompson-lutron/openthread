@@ -292,7 +292,7 @@ void Mle::SetRole(DeviceRole aRole)
     SuccessOrExit(Get<Notifier>().Update(mRole, aRole, kEventThreadRoleChanged));
 
 #if OPENTHREAD_FTD
-    mRoleTransitioner.SignalRoleChanged();
+    mRoleTransitioner.SignalRoleChanged(mRole);
 #endif
 
     LogNote("Role %s -> %s", RoleToString(oldRole), RoleToString(mRole));
@@ -595,7 +595,6 @@ void Mle::SetStateDetached(void)
     Get<MeshForwarder>().SetRxOnWhenIdle(true);
     Get<Mac::Mac>().SetBeaconEnabled(false);
 #if OPENTHREAD_FTD
-    mRoleTransitioner.SignalDowngradeBlocked(false);
     ClearAlternateRloc16();
     HandleDetachStart();
 #endif
@@ -716,7 +715,7 @@ Error Mle::SetDeviceMode(DeviceMode aDeviceMode)
         ClearAlternateRloc16();
     }
 
-    mRoleTransitioner.SignalFtdModeChanged(IsFullThreadDevice(), mRole);
+    mRoleTransitioner.SignalFtdModeChanged(IsFullThreadDevice());
 #endif
 
     if (IsAttached())
@@ -6094,7 +6093,7 @@ void Mle::AnnounceHandler::HandleAnnounceAttachSuccess(void)
     mState = kStateToInformPreviousChannel;
 
 #if OPENTHREAD_FTD
-    if (Get<Mle>().IsFullThreadDevice() && !Get<Mle>().IsRouter() && Get<Mle>().IsRouterRoleTransitionPending())
+    if (Get<Mle>().IsRouterRoleUpgradePending())
     {
         ExitNow();
     }
